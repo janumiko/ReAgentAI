@@ -7,4 +7,5 @@ requires-python = ">=3.10"
 dependencies = [
     "aizynthfinder>=4.3.2",
     "pydantic-ai>=0.2.4",
+    "python-dotenv>=1.1.0",
 ]

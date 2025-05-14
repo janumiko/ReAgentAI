@@ -3140,12 +3140,14 @@ source = { virtual = "." }
 dependencies = [
     { name = "aizynthfinder" },
     { name = "pydantic-ai" },
+    { name = "python-dotenv" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "aizynthfinder", specifier = ">=4.3.2" },
     { name = "pydantic-ai", specifier = ">=0.2.4" },
+    { name = "python-dotenv", specifier = ">=1.1.0" },
 ]
 
 [[package]]
