@@ -1,4 +1,5 @@
-# ai-agent-drug-discovery
+# ReAgentAI
+
 ### Setup
 requires-python = ">=3.9"
 ```sh
