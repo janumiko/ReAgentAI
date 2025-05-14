@@ -1,0 +1,6 @@
+# explicitly ignore to avoid leaking secrets
+.env
+
+.*
+
+__pycache__
