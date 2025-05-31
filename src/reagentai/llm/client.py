@@ -1,6 +1,5 @@
-import os
 import logging
-from typing import Type, TypeVar, Optional, List, Dict, Any
+from typing import Optional, List
 
 from pydantic_ai import Agent, Tool
 
@@ -9,7 +8,13 @@ logging.basicConfig(level=logging.INFO)
 
 
 class LLMClient:
-    def __init__(self, model_name: str = "google-gla:gemini-2.0-flash", tools: Optional[List[Tool]] = None):
+
+    def __init__(
+        self,
+        model_name: str = "google-gla:gemini-2.0-flash",
+        tools: Optional[List[Tool]] = None,
+        instructions: Optional[str] = None,
+    ):
         """
         Initializes the LLMClient with a specified model.
 
@@ -18,7 +23,7 @@ class LLMClient:
         """
         self.model_name = model_name
         self.tools = tools if tools is not None else []
-        self.agent = Agent(model_name, tools=tools)
+        self.agent = Agent(model_name, tools=tools, instructions=instructions)
         self.result_history = None
         logger.info(f"LLMClient initialized with model: {model_name}")
 
@@ -53,9 +58,7 @@ class LLMClient:
         logger.info("LLMClient chat history cleared.")
         self.result_history = None
 
-    def respond(
-        self, user_query: str, **kwargs
-    ) -> List[tuple]:
+    def respond(self, user_query: str, **kwargs) -> List[tuple]:
         """
         Responds to a user query and updates the chat history asynchronously.
 
