@@ -13,13 +13,15 @@ def register_tool(takes_ctx: bool = False, docstring_format: DocstringFormat = "
     """
 
     def decorator(func):
-        _registered_tools.append(Tool(
-            function=func,
-            takes_ctx=takes_ctx,
-            name=func.__name__,
-            description=func.__doc__,
-            docstring_format=docstring_format,
-        ))
+        _registered_tools.append(
+            Tool(
+                function=func,
+                takes_ctx=takes_ctx,
+                name=func.__name__,
+                description=func.__doc__,
+                docstring_format=docstring_format,
+            )
+        )
         return func
 
     return decorator

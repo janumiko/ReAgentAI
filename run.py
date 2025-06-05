@@ -1,4 +1,4 @@
-from src.reagentai.main import main
+from src.reagentai.main import start_agent
 
 if __name__ == "__main__":
-    main()
+    start_agent()

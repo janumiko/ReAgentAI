@@ -9,11 +9,11 @@ logger = logging.getLogger(__name__)
 def is_valid_smiles(smiles: str, sanitize: bool = True) -> bool:
     """
     Check if a SMILES string is valid.
-    
+
     Args:
         smiles (str): The SMILES string to check.
         sanitize (bool): Whether to sanitize the molecule. Default is True.
-        
+
     Returns:
         bool: True if the SMILES string is valid, False otherwise.
     """

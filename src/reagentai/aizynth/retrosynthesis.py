@@ -1,187 +1,174 @@
-"""
-Example retrosynthesis analysis using AiZynthFinder library.
-This module demonstrates how to perform retrosynthetic analysis on target molecules.
-"""
-
-from typing import Any
+from typing import Any, List, Optional
 from aizynthfinder.aizynthfinder import AiZynthFinder
-from aizynthfinder.analysis import RouteCollection
+from aizynthfinder.context.config import Configuration
+from pydantic import BaseModel
+import logging
+
+from src.reagentai.core.registers import register_tool
+
+logger = logging.getLogger(__name__)
 
 
-class AiZynthFinderWrapper:
-    def __init__(self, config_path: str) -> None:
-        """
-        Initialize the AiZynthFinder with the given configuration file.
-
-        Args:
-            config_path (str): Path to the configuration file for AiZynthFinder.
-        """
-        self.finder = AiZynthFinder(configfile=config_path)
-
-        self.finder.stock.select("zinc")
-        self.finder.expansion_policy.select("uspto")
-        self.finder.filter_policy.select("uspto")
-
-    def perform_tree_search(
-        self, target_smile: str
-    ) -> tuple[RouteCollection, dict[str, Any]]:
-        """
-        Perform a retrosynthetic tree search for the given target SMILES.
-
-        Args:
-            target_smile (str): SMILES representation of the target molecule.
-
-        Returns:
-            tuple[RouteCollection, dict[str, Any]]: A tuple containing the routes and statistics.
-        """
-
-        self.finder.target_smiles = target_smile
-        self.finder.tree_search()
-        self.finder.build_routes()
-
-        routes = self.finder.routes
-        statistics = self.finder.extract_statistics()
-
-        return (routes, statistics)
+class FullRetrosynthesisData(BaseModel):
+    all_routes: List[dict[str, Any]]
+    statistics: dict[str, Any]
 
 
-def prettify_route(route_data: dict, indent: int = 0) -> str:
+class RetrosynthesisResult(BaseModel):
+    selected_route_details: dict[str, Any]
+    overall_search_statistics: dict[str, Any]
+
+    # You'll likely need to redefine __str__ and __repr__
+    # as Pydantic's default repr is comprehensive but can be long.
+    def __str__(self) -> str:
+        route_info = (
+            f"  Number of steps (top route): {self.overall_search_statistics.get('number_of_steps', 'N/A')}\n"
+            f"  Top score: {self.overall_search_statistics.get('top_score', 'N/A'):.4f}\n"
+            f"  Precursors in stock (top route): {self.overall_search_statistics.get('precursors_in_stock', 'N/A')}\n"
+            f"  Total routes found: {self.overall_search_statistics.get('number_of_routes', 'N/A')}"
+        )
+        return (
+            f"Retrosynthesis Analysis Summary:\n{route_info}\n"
+            f"\nSelected Route Details:\n{self.selected_route_details}"
+        )
+
+
+class RetrosynthesisCache:
+    routes_cache: dict[str, FullRetrosynthesisData] = {}
+
+    @classmethod
+    def add(cls, target_smile: str, data: FullRetrosynthesisData):
+        cls.routes_cache[target_smile] = data
+
+    @classmethod
+    def get(cls, target_smile: str) -> FullRetrosynthesisData | None:
+        return cls.routes_cache.get(target_smile)
+
+    @classmethod
+    def clear(cls):
+        cls.routes_cache.clear()
+
+
+# --- Global variable to hold the AiZynthFinder instance ---
+_global_aizynthfinder_instance: Optional[AiZynthFinder] = None
+_current_finder_config: Configuration = {}  # To track if config changed and clear cache
+
+
+def initialize_aizynthfinder_globally(
+    config_path: str, stock: str, expansion_policy: str, filter_policy: str
+):
     """
-    Prettify a single retrosynthesis route for better readability.
+    Initializes the global AiZynthFinder instance.
+    This function should be called ONCE at application startup.
+    """
+    global _global_aizynthfinder_instance, _current_finder_config
+
+    new_config = Configuration.from_file(config_path)
+
+    # Only re-initialize and clear cache if config has changed
+    if _global_aizynthfinder_instance is None or _current_finder_config != new_config:
+        logger.info(f"Initializing AiZynthFinder with new configuration: {new_config}")
+        _global_aizynthfinder_instance = AiZynthFinder(configfile=config_path)
+
+        _global_aizynthfinder_instance.stock.select(stock)
+        _global_aizynthfinder_instance.expansion_policy.select(expansion_policy)
+        _global_aizynthfinder_instance.filter_policy.select(filter_policy)
+
+        # Crucial for cache invalidation:
+        # When a new finder object with potentially different configuration is created,
+        # the existing cache results are no longer valid, so we clear it.
+        RetrosynthesisCache.clear()
+        _current_finder_config = new_config
+    else:
+        logger.info(
+            "AiZynthFinder already initialized with current configuration. Skipping re-initialization."
+        )
+
+
+@register_tool()
+def perform_retrosynthesis(
+    target_smile: str, route_index: int = 0
+) -> RetrosynthesisResult:
+    """
+    Perform a retrosynthetic tree search for the given target molecule.
+    Accesses a pre-initialized global AiZynthFinder instance.
+    Caches all found routes, but returns only the specified route and overall statistics.
 
     Args:
-        route_data (dict): Route data from AiZynthFinder
-        indent (int): Current indentation level
+        target_smile (str): SMILES representation of the target molecule.
+        route_index (int): Index of the route to return from the found routes.
+                           Defaults to 0 (top-scoring route).
 
     Returns:
-        str: Formatted string representation of the route
+        RetrosynthesisResult: Result containing the selected route details and overall search statistics.
+
+    Raises:
+        ValueError: If no routes are found or route_index is out of bounds.
+        RuntimeError: If AiZynthFinder has not been initialized.
     """
-    output = []
-    prefix = "  " * indent
+    global _global_aizynthfinder_instance
 
-    if route_data.get("type") == "mol":
-        # Format molecule
-        smiles = route_data.get("smiles", "Unknown")
-        in_stock = route_data.get("in_stock", False)
-        stock_status = "✓ In Stock" if in_stock else "✗ Not in Stock"
+    if _global_aizynthfinder_instance is None:
+        raise RuntimeError(
+            "AiZynthFinder has not been initialized. Call 'initialize_aizynthfinder_globally' first."
+        )
 
-        output.append(f"{prefix}🧪 Molecule: {smiles}")
-        output.append(f"{prefix}   Status: {stock_status}")
+    # 1. Check cache first
+    cached_full_data = RetrosynthesisCache.get(target_smile)
+    if cached_full_data:
+        logger.info(
+            f"Retrieving full retrosynthesis data for {target_smile} from cache."
+        )
 
-        # Show scores if available
-        if "scores" in route_data:
-            for score_name, score_value in route_data["scores"].items():
-                output.append(f"{prefix}   {score_name.title()}: {score_value:.4f}")
+        # Validate route_index against cached data
+        if not cached_full_data.all_routes:
+            raise ValueError(
+                f"Cached data found, but no routes present for target: {target_smile}"
+            )
+        if route_index >= len(cached_full_data.all_routes):
+            raise ValueError(
+                f"Route index {route_index} is out of bounds for cached data. "
+                f"Only {len(cached_full_data.all_routes)} routes found previously."
+            )
 
-    elif route_data.get("type") == "reaction":
-        # Format reaction
-        smiles = route_data.get("smiles", "Unknown")
-        output.append(f"{prefix}⚗️  Reaction: {smiles}")
+        # Extract the specific route to return
+        selected_route_dict = cached_full_data.all_routes[route_index]
+        return RetrosynthesisResult(
+            selected_route_details=selected_route_dict,
+            overall_search_statistics=cached_full_data.statistics,
+        )
 
-        # Show metadata if available
-        if "metadata" in route_data:
-            metadata = route_data["metadata"]
-            if "classification" in metadata:
-                output.append(
-                    f"{prefix}   Classification: {metadata['classification']}"
-                )
-            if "policy_probability" in metadata:
-                prob = metadata["policy_probability"]
-                output.append(f"{prefix}   Probability: {prob:.4f}")
-            if "library_occurence" in metadata:
-                output.append(
-                    f"{prefix}   Library Occurrences: {metadata['library_occurence']}"
-                )
+    # 2. If not in cache, perform search using the global instance
+    logger.info(f"Performing retrosynthesis for {target_smile}...")
+    _global_aizynthfinder_instance.target_smiles = target_smile
+    _global_aizynthfinder_instance.tree_search()
+    _global_aizynthfinder_instance.build_routes()  # This populates finder.routes
 
-    # Process children recursively
-    if "children" in route_data and route_data["children"]:
-        output.append(f"{prefix}└── Precursors:")
-        for i, child in enumerate(route_data["children"]):
-            if i > 0:
-                output.append("")  # Add spacing between children
-            output.append(prettify_route(child, indent + 1))
+    # 3. Extract all routes and statistics
+    routes_dicts = _global_aizynthfinder_instance.routes.dict_with_scores()
+    statistics = _global_aizynthfinder_instance.extract_statistics()
 
-    return "\n".join(output)
+    if not routes_dicts:  # Check if any routes were found
+        raise ValueError(f"No retrosynthesis routes found for target: {target_smile}")
 
+    if route_index >= len(routes_dicts):
+        raise ValueError(
+            f"Route index {route_index} is out of bounds. Only {len(routes_dicts)} routes found."
+        )
 
-def print_retrosynthesis_results(
-    routes: RouteCollection, stats: dict[str, Any], target: str
-) -> None:
-    """
-    Print prettified retrosynthesis results with explanatory context.
-
-    Args:
-        routes (RouteCollection): Routes from AiZynthFinder
-        stats (dict): Statistics from the search
-        target (str): Target molecule SMILES
-    """
-    print("=" * 80)
-    print("🎯 RETROSYNTHESIS ANALYSIS RESULTS")
-    print("=" * 80)
-    print(f"Target Molecule: {target}")
-    print("📝 Note: 'In Stock' refers to availability in ZINC database for research,")
-    print("    not commercial pharmaceutical availability.")
-    print()
-
-    # Print key statistics
-    print("📊 Search Statistics:")
-    print(f"  Search Time: {stats.get('search_time', 0):.2f} seconds")
-    print(f"  Routes Found: {stats.get('number_of_routes', 0)}")
-    print(f"  Solved Routes: {stats.get('number_of_solved_routes', 0)}")
-    print(f"  Top Score: {stats.get('top_score', 0):.4f}")
-    print(f"  Is Solved: {'✓' if stats.get('is_solved', False) else '✗'}")
-
-    # Show precursor availability summary
-    precursors_in_stock = stats.get("precursors_in_stock", "")
-    precursors_not_in_stock = stats.get("precursors_not_in_stock", "")
-
-    if precursors_in_stock:
-        print(f"  Precursors Available: {precursors_in_stock}")
-    if precursors_not_in_stock:
-        print(f"  Precursors Needed: {precursors_not_in_stock}")
-    print()
-
-    # Print the best route(s)
-    routes_data = routes.dict_with_scores()
-    if not routes_data:
-        print("❌ No viable routes found.")
-        return
-
-    print(
-        f"🛤️  Best Route (Score: {routes_data[0].get('scores', {}).get('state score', 0):.4f}):"
+    # 4. Create full data object and add to cache
+    full_data_to_cache = FullRetrosynthesisData(
+        all_routes=routes_dicts,
+        statistics=statistics,
     )
-    print("-" * 60)
-    print(prettify_route(routes_data[0]))
+    RetrosynthesisCache.add(target_smile, full_data_to_cache)
 
-    # Show synthesis complexity
-    steps = stats.get("number_of_steps", 0)
-    precursors = stats.get("number_of_precursors", 0)
-    available_precursors = stats.get("number_of_precursors_in_stock", 0)
+    # 5. Extract the specific route for return to the agent
+    selected_route_dict = routes_dicts[route_index]
+    result_for_agent = RetrosynthesisResult(
+        selected_route_details=selected_route_dict,
+        overall_search_statistics=statistics,
+    )
 
-    print()
-    print("🧬 Synthesis Summary:")
-    print(f"  Number of Steps: {steps}")
-    print(f"  Total Precursors: {precursors}")
-    print(f"  Available Precursors: {available_precursors}/{precursors}")
-
-    if available_precursors == precursors:
-        print("  ✅ All starting materials are available!")
-    else:
-        print("  ⚠️  Some starting materials may need synthesis or sourcing.")
-
-
-def main():
-    config_path = "data/config.yml"
-
-    # Initialize the AiZynthFinder with default settings
-    finder = AiZynthFinderWrapper(config_path)
-
-    # Define the target molecule for retrosynthesis
-    target = "CC(=O)Nc1ccc(O)cc1"  # Example: Acetaminophen (Paracetamol)
-
-    print("🔍 Starting retrosynthesis analysis...")
-    print(f"Target: Paracetamol/Acetaminophen ({target})")
-    print()
-
-    routes, stats = finder.perform_tree_search(target)
-    print_retrosynthesis_results(routes, stats, target)
+    logger.info(f"Retrosynthesis for {target_smile} completed and cached.")
+    return result_for_agent

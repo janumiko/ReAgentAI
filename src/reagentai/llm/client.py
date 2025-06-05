@@ -8,7 +8,6 @@ logging.basicConfig(level=logging.INFO)
 
 
 class LLMClient:
-
     def __init__(
         self,
         model_name: str = "google-gla:gemini-2.0-flash",
