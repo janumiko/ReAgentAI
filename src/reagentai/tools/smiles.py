@@ -1,6 +1,11 @@
 import logging
 
+from PIL import Image
 from rdkit import Chem
+from rdkit.Chem import Draw
+import tempfile
+
+from src.reagentai.models.llm_output import ImageOutput
 
 logger = logging.getLogger(__name__)
 
@@ -24,3 +29,27 @@ def is_valid_smiles(smiles: str, sanitize: bool = True) -> bool:
     logging.info(f"SMILES: {smiles}, Valid: {mol is not None}")
 
     return mol is not None
+
+
+def image_from_smiles(smiles: str, size: tuple[int, int] = (300, 300)) -> str:
+    """
+    Generate an image from a SMILES string.
+
+    Args:
+        smiles (str): The SMILES string to convert to an image.
+        size (tuple[int, int]): The size of the image in pixels. Default is (300, 300).
+
+    Returns:
+        str: The file path to the generated image.
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        raise ValueError(f"Invalid SMILES string: {smiles}")
+
+    PIL_img: Image.Image = Draw.MolToImage(mol, size=size, kekulize=True)
+
+    with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp_file:
+        PIL_img.save(tmp_file, format="PNG")
+        temp_file_path = tmp_file.name
+
+    return temp_file_path
