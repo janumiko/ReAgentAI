@@ -1,8 +1,10 @@
 import logging
+from typing import Protocol
 
 from aizynthfinder.aizynthfinder import AiZynthFinder
 from aizynthfinder.analysis.utils import RouteSelectionArguments
 from aizynthfinder.context.config import Configuration
+from pydantic_ai import RunContext
 
 from src.reagentai.models.retrosynthesis import RouteCollection
 
@@ -11,44 +13,50 @@ from .helpers import parse_route_dict
 logger = logging.getLogger(__name__)
 
 
-# --- Global variable to hold the AiZynthFinder instance ---
-_global_aizynthfinder_instance: AiZynthFinder | None = None
-_current_finder_config: Configuration = {}  # To track if config changed and clear cache
+class HasAiZynthFinder(Protocol):
+    """Protocol for any dependencies that include an AiZynthFinder instance."""
+
+    aizynth_finder: AiZynthFinder
 
 
-def initialize_aizynthfinder_globally(
+def initialize_aizynthfinder(
     config_path: str, stock: str, expansion_policy: str, filter_policy: str
-):
+) -> AiZynthFinder:
     """
-    Initializes the global AiZynthFinder instance.
-    This function should be called ONCE at application startup.
+    Initializes the AiZynthFinder instance with the given configuration.
+
+    Args:
+        config_path (str): Path to the configuration file for AiZynthFinder.
+        stock (str): Stock source to use (e.g., "zinc").
+        expansion_policy (str): Expansion policy to use (e.g., "uspto").
+        filter_policy (str): Filter policy to use (e.g., "uspto").
+
+    Returns:
+        AiZynthFinder: An initialized instance of AiZynthFinder.
     """
-    global _global_aizynthfinder_instance, _current_finder_config
+    config = Configuration.from_file(config_path)
+    finder = AiZynthFinder(
+        configfile=config_path,
+    )
+    finder.stock.select(stock)
+    finder.expansion_policy.select(expansion_policy)
+    finder.filter_policy.select(filter_policy)
 
-    new_config = Configuration.from_file(config_path)
-
-    # Only re-initialize and clear cache if config has changed
-    if _global_aizynthfinder_instance is None or _current_finder_config != new_config:
-        logger.info(f"Initializing AiZynthFinder with new configuration: {new_config}")
-        _global_aizynthfinder_instance = AiZynthFinder(configfile=config_path)
-
-        _global_aizynthfinder_instance.stock.select(stock)
-        _global_aizynthfinder_instance.expansion_policy.select(expansion_policy)
-        _global_aizynthfinder_instance.filter_policy.select(filter_policy)
-
-        # Crucial for cache invalidation:
-        # When a new finder object with potentially different configuration is created,
-        # the existing cache results are no longer valid, so we clear it.
-        RetrosynthesisCache.clear()
-        _current_finder_config = new_config
-    else:
-        logger.info(
-            "AiZynthFinder already initialized with current configuration. Skipping re-initialization."
+    if RetrosynthesisCache.finder_config is None:
+        RetrosynthesisCache.finder_config = config
+    elif RetrosynthesisCache.finder_config != config:
+        logger.warning(
+            "Configuration has changed since the last initialization. Clearing cache."
         )
+        RetrosynthesisCache.clear()
+        RetrosynthesisCache.finder_config = config
+
+    return finder
 
 
 class RetrosynthesisCache:
     routes_cache: dict[str, RouteCollection] = {}
+    finder_config: Configuration | None = None
 
     @classmethod
     def add(cls, target_smile: str, data: RouteCollection):
@@ -63,30 +71,24 @@ class RetrosynthesisCache:
         cls.routes_cache.clear()
 
 
-def perform_retrosynthesis(target_smile: str) -> RouteCollection:
+def perform_retrosynthesis(
+    ctx: RunContext[HasAiZynthFinder], target_smile: str
+) -> RouteCollection:
     """
-    Performs retrosynthetic analysis for a given target molecule represented by a SMILES string.
-
-    This function uses a globally initialized AiZynthFinder instance to search for possible retrosynthetic routes
-    to synthesize the target molecule. It raises an error if the AiZynthFinder instance is not initialized or if
-    no routes are found. The resulting routes are parsed and returned as a RouteCollection object.
+    Performs retrosynthesis for a given target SMILES string using the AiZynthFinder instance.
 
     Args:
-        target_smile (str): The SMILES string of the target molecule for which retrosynthesis is to be performed.
+        ctx (RunContext[HasAiZynthFinder]): The run context containing the AiZynthFinder instance.
+        target_smile (str): The target SMILES string for retrosynthesis.
 
     Returns:
-        RouteCollection: A collection of retrosynthetic routes found for the target molecule.
+        RouteCollection: A collection of retrosynthesis routes found for the target SMILES.
 
     Raises:
-        RuntimeError: If the global AiZynthFinder instance has not been initialized.
-        ValueError: If no retrosynthetic routes are found for the target molecule.
+        ValueError: If no retrosynthesis routes are found for the target SMILES.
     """
-    global _global_aizynthfinder_instance
 
-    if _global_aizynthfinder_instance is None:
-        raise RuntimeError(
-            "AiZynthFinder has not been initialized. Call 'initialize_aizynthfinder_globally' first."
-        )
+    finder = ctx.deps.aizynth_finder
 
     # 1. Check if the target SMILES is already in cache
     cached_routes = RetrosynthesisCache.get(target_smile)
@@ -98,15 +100,13 @@ def perform_retrosynthesis(target_smile: str) -> RouteCollection:
     logger.info(f"Performing retrosynthesis for {target_smile}...")
     selection_args = RouteSelectionArguments(nmin=5, nmax=25)
 
-    _global_aizynthfinder_instance.target_smiles = target_smile
-    _global_aizynthfinder_instance.tree_search()
-    _global_aizynthfinder_instance.build_routes(selection_args)
-    _global_aizynthfinder_instance.routes.compute_scores(
-        *_global_aizynthfinder_instance.scorers.objects()
-    )
+    finder.target_smiles = target_smile
+    finder.tree_search()
+    finder.build_routes(selection_args)
+    finder.routes.compute_scores(*finder.scorers.objects())
 
     # 3. Extract all routes and statistics
-    routes = _global_aizynthfinder_instance.routes.dict_with_scores()
+    routes = finder.routes.dict_with_scores()
 
     if not routes:  # Check if any routes were found
         raise ValueError(f"No retrosynthesis routes found for target: {target_smile}")
