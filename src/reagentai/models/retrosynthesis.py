@@ -94,17 +94,34 @@ class RouteCollection(BaseModel):
 
     Attributes:
         routes (List[Route]): List of retrosynthesis routes.
+        n_reactions (int): Total number of reactions across all routes.
     """
 
     routes: List[Route] = Field(default_factory=list)
-
-    def __getitem__(self, index: int) -> Route:
-        return self.routes[index]
+    n_reactions: int = Field(default=0)
 
     def __len__(self) -> int:
-        return len(self.routes)
+        """
+        Returns the number of routes in the collection.
+        """
+        return self.n_reactions
+
+    def __getitem__(self, index: int) -> Route:
+        """
+        Returns the route at the specified index.
+
+        Args:
+            index (int): Index of the route to retrieve.
+
+        Returns:
+            Route: The route at the specified index.
+        """
+        return self.routes[index]
 
     def __iter__(self):
+        """
+        Returns an iterator over the routes in the collection.
+        """
         return iter(self.routes)
 
 
