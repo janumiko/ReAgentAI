@@ -51,7 +51,7 @@ class MultipleOutputs(BaseModel):
 
     outputs: list[TextOutput | ImageOutput] = Field(default_factory=list)
 
-    def to_message(self):
+    def to_message(self) -> list[dict]:
         """
         Converts the multiple outputs to a message format suitable for display.
 
