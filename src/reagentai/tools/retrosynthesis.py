@@ -96,7 +96,7 @@ def perform_retrosynthesis(target_smile: str) -> RouteCollection:
 
     # 2. If not in cache, perform search using the global instance
     logger.info(f"Performing retrosynthesis for {target_smile}...")
-    selection_args = RouteSelectionArguments(nmin=1, nmax=10)
+    selection_args = RouteSelectionArguments(nmin=5, nmax=25)
 
     _global_aizynthfinder_instance.target_smiles = target_smile
     _global_aizynthfinder_instance.tree_search()
