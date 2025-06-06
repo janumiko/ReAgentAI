@@ -1,7 +1,6 @@
 from pydantic_ai import Tool
 
 from src.reagentai.common.client import LLMClient
-from src.reagentai.tools.helpers import create_tool
 from src.reagentai.tools.retrosynthesis import perform_retrosynthesis
 from src.reagentai.tools.smiles import is_valid_smiles
 
@@ -20,7 +19,7 @@ def create_main_agent() -> LLMClient:
     with open(MAIN_AGENT_INSTRUCTIONS_PATH) as instructions_file:
         instructions = instructions_file.read()
 
-    tools = map(create_tool, [perform_retrosynthesis, is_valid_smiles])
+    tools = [Tool(perform_retrosynthesis), Tool(is_valid_smiles)]
 
     llm_client = LLMClient(model_name=MAIN_AGENT_MODEL, tools=tools, instructions=instructions)
 

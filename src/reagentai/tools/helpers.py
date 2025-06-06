@@ -10,13 +10,6 @@ from src.reagentai.models.retrosynthesis import (
 )
 
 
-def create_tool(func, takes_ctx: bool = False) -> Tool:
-    return Tool(
-        function=func,
-        takes_ctx=takes_ctx,
-    )
-
-
 def parse_node(node_dict: dict) -> Node | None:
     node_type = node_dict.get("type")
     children_data = node_dict.get("children", [])
