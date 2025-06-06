@@ -1,11 +1,9 @@
 from rdkit import Chem
-from .registers import register_tool
 import logging
 
 logger = logging.getLogger(__name__)
 
 
-@register_tool()
 def is_valid_smiles(smiles: str, sanitize: bool = True) -> bool:
     """
     Check if a SMILES string is valid.

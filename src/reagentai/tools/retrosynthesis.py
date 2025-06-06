@@ -4,8 +4,6 @@ from aizynthfinder.context.config import Configuration
 from pydantic import BaseModel
 import logging
 
-from src.reagentai.core.registers import register_tool
-
 logger = logging.getLogger(__name__)
 
 
@@ -85,7 +83,6 @@ def initialize_aizynthfinder_globally(
         )
 
 
-@register_tool()
 def perform_retrosynthesis(
     target_smile: str, route_index: int = 0
 ) -> RetrosynthesisResult:

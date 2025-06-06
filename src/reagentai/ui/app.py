@@ -2,7 +2,7 @@ import functools
 import gradio as gr
 
 from src.reagentai.constants import AVAILABLE_LLM_MODELS
-from src.reagentai.llm.client import LLMClient
+from src.reagentai.common.client import LLMClient
 
 
 # UI Creation Helper Functions
