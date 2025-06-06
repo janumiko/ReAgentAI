@@ -1,7 +1,8 @@
 # ReAgentAI
 
 ### Setup
-requires-python = ">=3.9"
+requires-python = ">=3.10"
+
 ```sh
 uv sync && source .venv/bin/activate
 ```
