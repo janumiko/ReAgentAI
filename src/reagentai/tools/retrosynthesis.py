@@ -2,6 +2,7 @@ import logging
 
 from aizynthfinder.aizynthfinder import AiZynthFinder
 from aizynthfinder.context.config import Configuration
+from aizynthfinder.analysis.utils import RouteSelectionArguments
 
 from src.reagentai.models.retrosynthesis import RouteCollection
 
@@ -95,9 +96,11 @@ def perform_retrosynthesis(target_smile: str) -> RouteCollection:
 
     # 2. If not in cache, perform search using the global instance
     logger.info(f"Performing retrosynthesis for {target_smile}...")
+    selection_args = RouteSelectionArguments(nmin=1, nmax=10)
+
     _global_aizynthfinder_instance.target_smiles = target_smile
     _global_aizynthfinder_instance.tree_search()
-    _global_aizynthfinder_instance.build_routes()
+    _global_aizynthfinder_instance.build_routes(selection_args)
     _global_aizynthfinder_instance.routes.compute_scores(
         *_global_aizynthfinder_instance.scorers.objects()
     )
