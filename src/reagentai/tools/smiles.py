@@ -1,9 +1,9 @@
 import logging
+import tempfile
 
 from PIL import Image
 from rdkit import Chem
 from rdkit.Chem import Draw
-import tempfile
 
 from src.reagentai.models.llm_output import ImageOutput
 
