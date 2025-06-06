@@ -117,7 +117,7 @@ def create_gradio_app(llm_client: LLMClient):
             api_name="bot_response",
         ).then(fn=re_enable_chat_input, inputs=None, outputs=[chat_input])
 
-        clear_button_event = chatbot_display.clear(
+        chatbot_display.clear(
             fn=functools.partial(handle_clear_chat, llm_client=llm_client),
             inputs=[],
             outputs=[chatbot_display, token_usage_display],
