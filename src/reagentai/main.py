@@ -4,7 +4,7 @@ from src.reagentai.logging import setup_logging
 from dotenv import load_dotenv
 from src.reagentai.aizynth.retrosynthesis import initialize_aizynthfinder_globally
 from src.reagentai.llm.client import LLMClient
-from src.reagentai.ui.app import get_gradio_app
+from src.reagentai.ui.app import create_gradio_app
 from src.reagentai.core.registers import get_registered_tools
 
 from src.reagentai.constants import INSTRUCTIONS_PATH, AIZYNTHFINDER_CONFIG_PATH
@@ -40,5 +40,5 @@ def start_agent():
     llm_client = LLMClient(
         model_name="google-gla:gemini-2.0-flash", tools=tools, instructions=instructions
     )
-    app = get_gradio_app(llm_client)
+    app = create_gradio_app(llm_client)
     app.launch(server_name="127.0.0.1")
