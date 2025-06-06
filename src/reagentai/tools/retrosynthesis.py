@@ -1,8 +1,8 @@
 import logging
 
 from aizynthfinder.aizynthfinder import AiZynthFinder
-from aizynthfinder.context.config import Configuration
 from aizynthfinder.analysis.utils import RouteSelectionArguments
+from aizynthfinder.context.config import Configuration
 
 from src.reagentai.models.retrosynthesis import RouteCollection
 
