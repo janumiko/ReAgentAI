@@ -1,8 +1,8 @@
-from src.reagentai.common.client import LLMClient
 from pydantic_ai import Tool
+
+from src.reagentai.common.client import LLMClient
 from src.reagentai.tools.retrosynthesis import perform_retrosynthesis
 from src.reagentai.tools.smiles import is_valid_smiles
-
 
 MAIN_AGENT_INSTRUCTIONS_PATH: str = "src/reagentai/agents/main/instructions.txt"
 MAIN_AGENT_MODEL: str = "google-gla:gemini-2.0-flash"
@@ -16,13 +16,11 @@ def create_main_agent() -> LLMClient:
         LLMClient: An instance of LLMClient configured with the main agent's model and instructions.
     """
 
-    with open(MAIN_AGENT_INSTRUCTIONS_PATH, "r") as instructions_file:
+    with open(MAIN_AGENT_INSTRUCTIONS_PATH) as instructions_file:
         instructions = instructions_file.read()
 
     tools = [Tool(perform_retrosynthesis), Tool(is_valid_smiles)]
 
-    llm_client = LLMClient(
-        model_name=MAIN_AGENT_MODEL, tools=tools, instructions=instructions
-    )
+    llm_client = LLMClient(model_name=MAIN_AGENT_MODEL, tools=tools, instructions=instructions)
 
     return llm_client

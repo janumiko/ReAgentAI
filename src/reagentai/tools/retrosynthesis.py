@@ -1,14 +1,15 @@
-from typing import Any, List, Optional
+import logging
+from typing import Any
+
 from aizynthfinder.aizynthfinder import AiZynthFinder
 from aizynthfinder.context.config import Configuration
 from pydantic import BaseModel
-import logging
 
 logger = logging.getLogger(__name__)
 
 
 class FullRetrosynthesisData(BaseModel):
-    all_routes: List[dict[str, Any]]
+    all_routes: list[dict[str, Any]]
     statistics: dict[str, Any]
 
 
@@ -48,7 +49,7 @@ class RetrosynthesisCache:
 
 
 # --- Global variable to hold the AiZynthFinder instance ---
-_global_aizynthfinder_instance: Optional[AiZynthFinder] = None
+_global_aizynthfinder_instance: AiZynthFinder | None = None
 _current_finder_config: Configuration = {}  # To track if config changed and clear cache
 
 
@@ -83,9 +84,7 @@ def initialize_aizynthfinder_globally(
         )
 
 
-def perform_retrosynthesis(
-    target_smile: str, route_index: int = 0
-) -> RetrosynthesisResult:
+def perform_retrosynthesis(target_smile: str, route_index: int = 0) -> RetrosynthesisResult:
     """
     Perform a retrosynthetic tree search for the given target molecule.
     Accesses a pre-initialized global AiZynthFinder instance.
@@ -113,9 +112,7 @@ def perform_retrosynthesis(
     # 1. Check cache first
     cached_full_data = RetrosynthesisCache.get(target_smile)
     if cached_full_data:
-        logger.info(
-            f"Retrieving full retrosynthesis data for {target_smile} from cache."
-        )
+        logger.info(f"Retrieving full retrosynthesis data for {target_smile} from cache.")
 
         # Validate route_index against cached data
         if not cached_full_data.all_routes:

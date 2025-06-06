@@ -1,5 +1,6 @@
-from rdkit import Chem
 import logging
+
+from rdkit import Chem
 
 logger = logging.getLogger(__name__)
 

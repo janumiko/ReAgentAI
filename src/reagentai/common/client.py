@@ -1,5 +1,5 @@
+from collections.abc import Sequence
 import logging
-from typing import Optional, List, Sequence, Tuple
 
 from pydantic_ai import Agent, Tool
 
@@ -12,7 +12,7 @@ class LLMClient:
         self,
         model_name: str = "google-gla:gemini-2.0-flash",
         tools: Sequence[Tool] = (),
-        instructions: Optional[str] = None,
+        instructions: str | None = None,
     ):
         """
         Initializes the LLMClient with a specified model.
@@ -23,7 +23,7 @@ class LLMClient:
         self.model_name = model_name
         self.instructions = instructions
         self.tools = tools
-        
+
         self.agent = Agent(model_name, tools=tools, instructions=instructions)
 
         self.result_history = None
@@ -76,9 +76,7 @@ class LLMClient:
         else:
             message_history = None
 
-        result = self.agent.run_sync(
-            user_query, message_history=message_history, **kwargs
-        )
+        result = self.agent.run_sync(user_query, message_history=message_history, **kwargs)
         self.result_history = result
         bot_message = result.output
         return bot_message

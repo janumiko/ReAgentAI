@@ -1,8 +1,9 @@
+from datetime import datetime
 import logging
 from logging import FileHandler
 from pathlib import Path
-from src.reagentai.constants import LOG_DIR, DEFAULT_LOG_LEVEL, LOG_TO_FILE
-from datetime import datetime
+
+from src.reagentai.constants import DEFAULT_LOG_LEVEL, LOG_DIR, LOG_TO_FILE
 
 
 def setup_logging(
@@ -32,9 +33,7 @@ def setup_logging(
     for handler in root_logger.handlers[:]:
         root_logger.removeHandler(handler)
 
-    formatter = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    )
+    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
     console_handler = logging.StreamHandler()
     console_handler.setFormatter(formatter)
