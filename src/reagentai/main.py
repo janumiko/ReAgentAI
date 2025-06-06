@@ -3,9 +3,7 @@ import logging
 from dotenv import load_dotenv
 
 from src.reagentai.agents.main.main_agent import create_main_agent
-from src.reagentai.constants import AIZYNTHFINDER_CONFIG_PATH
 from src.reagentai.logging import setup_logging
-from src.reagentai.tools.retrosynthesis import initialize_aizynthfinder_globally
 from src.reagentai.ui.app import create_gradio_app
 
 logger = logging.getLogger(__name__)
@@ -14,12 +12,6 @@ logger = logging.getLogger(__name__)
 def start_agent():
     setup_logging()
     load_dotenv()
-    initialize_aizynthfinder_globally(
-        config_path=AIZYNTHFINDER_CONFIG_PATH,
-        stock="zinc",
-        expansion_policy="uspto",
-        filter_policy="uspto",
-    )
 
     main_agent = create_main_agent()
     app = create_gradio_app(main_agent)
