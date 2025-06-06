@@ -1,7 +1,7 @@
 # ReAgentAI
 
 ### Setup
-requires-python = ">=3.10"
+Supported Python versions: 3.10 and 3.11.
 
 ```sh
 uv sync && source .venv/bin/activate
