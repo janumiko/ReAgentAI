@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import Union
 
 from pydantic import BaseModel, Field
 
@@ -53,7 +53,7 @@ class MolNode(BaseModel):
     in_stock: bool
     is_chemical: bool
     smiles: str
-    children: List[Node] = Field(default=list)
+    children: list[Node] = Field(default=list)
 
 
 class ReactionNode(BaseModel):
@@ -70,7 +70,7 @@ class ReactionNode(BaseModel):
     type: str
     smiles: str
     metadata: ReactionMetadata
-    children: List[Node] = Field(default=list)
+    children: list[Node] = Field(default=list)
 
 
 class Route(BaseModel):
@@ -97,7 +97,7 @@ class RouteCollection(BaseModel):
         n_reactions (int): Total number of reactions across all routes.
     """
 
-    routes: List[Route] = Field(default_factory=list)
+    routes: list[Route] = Field(default_factory=list)
     n_reactions: int = Field(default=0)
 
     def __len__(self) -> int:
