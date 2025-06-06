@@ -2,6 +2,7 @@ from collections.abc import Sequence
 import logging
 
 from pydantic_ai import Agent, Tool
+
 from src.reagentai.models.llm_output import MultipleOutputs
 
 logger = logging.getLogger(__name__)

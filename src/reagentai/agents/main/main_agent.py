@@ -2,7 +2,7 @@ from pydantic_ai import Tool
 
 from src.reagentai.common.client import LLMClient
 from src.reagentai.tools.retrosynthesis import perform_retrosynthesis
-from src.reagentai.tools.smiles import is_valid_smiles, image_from_smiles
+from src.reagentai.tools.smiles import image_from_smiles, is_valid_smiles
 
 MAIN_AGENT_INSTRUCTIONS_PATH: str = "src/reagentai/agents/main/instructions.txt"
 MAIN_AGENT_MODEL: str = "google-gla:gemini-2.0-flash"
