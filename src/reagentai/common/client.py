@@ -2,6 +2,7 @@ from collections.abc import Sequence
 import logging
 
 from pydantic_ai import Agent, Tool
+from src.reagentai.models.llm_output import MultipleOutputs
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -24,7 +25,7 @@ class LLMClient:
         self.instructions = instructions
         self.tools = tools
 
-        self.agent = Agent(model_name, tools=tools, instructions=instructions)
+        self.agent = Agent(model_name, tools=tools, instructions=instructions, output_type=MultipleOutputs)
 
         self.result_history = None
         logger.info(f"LLMClient initialized with model: {model_name}")
@@ -59,7 +60,7 @@ class LLMClient:
         logger.info("LLMClient chat history cleared.")
         self.result_history = None
 
-    def respond(self, user_query: str, **kwargs) -> str:
+    def respond(self, user_query: str, **kwargs) -> MultipleOutputs:
         """
         Responds to a user query and updates the chat history asynchronously.
 
@@ -69,7 +70,7 @@ class LLMClient:
             **kwargs: Additional keyword arguments to pass to the agent's run method.
 
         Returns:
-            str: The bot's response to the user's query.
+            MultipleOutputs: The response from the agent, which can include text and images.
         """
         if self.result_history is not None:
             message_history = self.result_history.all_messages()
@@ -78,5 +79,6 @@ class LLMClient:
 
         result = self.agent.run_sync(user_query, message_history=message_history, **kwargs)
         self.result_history = result
-        bot_message = result.output
+        logger.info(f"LLMClient response: {result.output}")
+        bot_message = result.output.to_message()
         return bot_message
