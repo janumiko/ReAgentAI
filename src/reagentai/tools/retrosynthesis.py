@@ -113,7 +113,7 @@ def perform_retrosynthesis(
 
     # 4. Convert to RouteCollection
     routes = [parse_route_dict(route) for route in routes]
-    route_collection = RouteCollection(routes=routes, n_reactions=len(routes))
+    route_collection = RouteCollection(routes=routes, n_routes=len(routes))
     logger.info(f"Found {len(route_collection)} retrosynthesis routes for {target_smile}.")
 
     # 5. Cache the result

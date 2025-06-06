@@ -27,14 +27,14 @@ class Score(BaseModel):
         n_reactions (int): Number of reactions in the route.
         n_precursors (int): Number of precursors in the route.
         n_precursors_in_stock (int): Number of precursors that are in stock.
-        avg_template_occurance (float): Average occurrence of templates in the route.
+        avg_template_occurence (float): Average occurrence of templates in the route.
     """
 
     state_score: float
     n_reactions: int
     n_precursors: int
     n_precursors_in_stock: int
-    avg_template_occurance: float
+    avg_template_occurence: float
 
 
 class MolNode(BaseModel):
@@ -94,17 +94,17 @@ class RouteCollection(BaseModel):
 
     Attributes:
         routes (List[Route]): List of retrosynthesis routes.
-        n_reactions (int): Total number of reactions across all routes.
+        n_routes (int): Number of routes in the collection.
     """
 
     routes: list[Route] = Field(default_factory=list)
-    n_reactions: int = Field(default=0)
+    n_routes: int = Field(default=0)
 
     def __len__(self) -> int:
         """
         Returns the number of routes in the collection.
         """
-        return self.n_reactions
+        return self.n_routes
 
     def __getitem__(self, index: int) -> Route:
         """

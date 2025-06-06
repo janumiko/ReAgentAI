@@ -9,7 +9,7 @@ from src.reagentai.tools.retrosynthesis import (
     initialize_aizynthfinder,
     perform_retrosynthesis,
 )
-from src.reagentai.tools.smiles import is_valid_smiles
+from src.reagentai.tools.smiles import image_from_smiles, is_valid_smiles
 
 MAIN_AGENT_INSTRUCTIONS_PATH: str = "src/reagentai/agents/main/instructions.txt"
 MAIN_AGENT_MODEL: str = "google-gla:gemini-2.0-flash"
@@ -37,8 +37,7 @@ def create_main_agent() -> LLMClient:
     with open(MAIN_AGENT_INSTRUCTIONS_PATH) as instructions_file:
         instructions = instructions_file.read()
 
-    # Define tools for the main agent
-    tools = [Tool(perform_retrosynthesis), Tool(is_valid_smiles)]
+    tools = [Tool(perform_retrosynthesis), Tool(is_valid_smiles), Tool(image_from_smiles)]
 
     aizynth_finder = initialize_aizynthfinder(
         config_path=AIZYNTHFINDER_CONFIG_PATH,

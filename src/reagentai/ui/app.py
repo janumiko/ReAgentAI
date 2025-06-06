@@ -32,7 +32,7 @@ def create_chat_interface():
             type="messages",
             label="Conversation",
             bubble_full_width=False,
-            height=500,
+            height=800,
         )
         chat_input = gr.MultimodalTextbox(
             placeholder="Type your query here...",
@@ -63,7 +63,7 @@ def handle_bot_response(chat_history: list, llm_client: LLMClient):
     """
     user_query = chat_history[-1]["content"] if chat_history else ""
     response = llm_client.respond(user_query)
-    chat_history.append({"role": "assistant", "content": response})
+    chat_history.extend(response)
     token_used = llm_client.get_token_usage()
     return chat_history, token_used
 
