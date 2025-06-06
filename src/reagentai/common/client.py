@@ -1,7 +1,9 @@
 from collections.abc import Sequence
 import logging
+from typing import Any
 
 from pydantic_ai import Agent, Tool
+from pydantic_ai.tools import AgentDepsT
 
 from src.reagentai.models.llm_output import MultipleOutputs
 
@@ -15,18 +17,32 @@ class LLMClient:
         model_name: str = "google-gla:gemini-2.0-flash",
         tools: Sequence[Tool] = (),
         instructions: str | None = None,
+        dependency_types: AgentDepsT | None = None,
+        dependencies: Any | None = None,
     ):
         """
-        Initializes the LLMClient with a specified model.
+        Initializes the LLMClient with the specified model, tools, instructions, and dependencies.
 
         Args:
             model_name (str): The name of the language model to use.
+            tools (Sequence[Tool]): A sequence of tools that the agent can use.
+            instructions (str | None): Instructions for the agent, if any.
+            dependency_types (AgentDepsT | None): Types of dependencies required by the agent.
+            dependencies (Any | None): Actual dependencies to be used by the agent.
         """
+
         self.model_name = model_name
         self.instructions = instructions
         self.tools = tools
+        self.dependencies = dependencies
 
-        self.agent = Agent(model_name, tools=tools, instructions=instructions, output_type=MultipleOutputs)
+        self.agent = Agent(
+            model_name,
+            tools=tools,
+            instructions=instructions,
+            deps_type=dependency_types,
+            output_type=MultipleOutputs,
+        )
 
         self.result_history = None
         logger.info(f"LLMClient initialized with model: {model_name}")
@@ -38,7 +54,12 @@ class LLMClient:
             model_name (str): The name of the new language model to use.
         """
         self.model_name = model_name
-        self.agent = Agent(model_name, tools=self.tools, instructions=self.instructions)
+        self.agent = Agent(
+            model_name,
+            tools=self.tools,
+            instructions=self.instructions,
+            deps_type=self.dependencies,
+        )
         logger.info(f"LLMClient model set to: {model_name}")
 
     def get_token_usage(self) -> int:
@@ -73,12 +94,18 @@ class LLMClient:
         Returns:
             MultipleOutputs: The response from the agent, which can include text and images.
         """
+
         if self.result_history is not None:
             message_history = self.result_history.all_messages()
         else:
             message_history = None
 
-        result = self.agent.run_sync(user_query, message_history=message_history, **kwargs)
+        result = self.agent.run_sync(
+            user_query,
+            message_history=message_history,
+            deps=self.dependencies,
+            **kwargs,
+        )
         self.result_history = result
         logger.info(f"LLMClient response: {result.output}")
         bot_message = result.output.to_message()
