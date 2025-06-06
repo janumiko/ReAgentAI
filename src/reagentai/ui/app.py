@@ -26,25 +26,23 @@ def _create_chat_interface():
     with gr.Column(scale=3):
         gr.Markdown("### Chat & Results")
         chatbot_display = gr.Chatbot(
+            type="messages",
             label="Conversation",
             bubble_full_width=False,
             height=500,
         )
-        user_query_textbox = gr.Textbox(
-            label="Your Message",
-            placeholder="Ask a question, e.g., 'Explain the first step of Route 1' or press Send to analyze.",
+        chat_input = gr.MultimodalTextbox(
+            placeholder="Type your query here...",
+            file_count="multiple",
+            sources=["upload"],
             show_label=False,
         )
-        send_button = gr.Button(
-            "Send",
-            variant="primary",
-        )
-    return chatbot_display, user_query_textbox, send_button
+    return chatbot_display, chat_input
 
 
 def _create_gradio_app(llm_client: LLMClient):
     with gr.Blocks(
-        theme=gr.themes.Soft(primary_hue="teal", secondary_hue="orange"),
+        theme=gr.themes.Origin(),
     ) as demo:
         gr.Markdown(
             """
@@ -52,18 +50,18 @@ def _create_gradio_app(llm_client: LLMClient):
             """
         )
 
-        def respond(
-            user_query: str,
+        def bot(
             chat_history: list,
         ):
             """
             Respond to user query and update chat history.
             """
+            user_query = chat_history[-1]["content"] if chat_history else ""
             response = llm_client.respond(user_query)
-            chat_history.append((user_query, response))
+            chat_history.append({"role": "assistant", "content": response})
             token_used = llm_client.get_token_usage()
 
-            return "", chat_history, token_used
+            return chat_history, token_used
 
         def clear():
             """
@@ -74,27 +72,35 @@ def _create_gradio_app(llm_client: LLMClient):
 
         with gr.Row():
             llm_model_dropdown, token_usage_display = _create_settings_panel()
-            chatbot_display, user_query_textbox, send_button = _create_chat_interface()
+            chatbot_display, chat_input = _create_chat_interface()
 
-            chatbot_display.clear(
-                clear,
-                [],
-                [chatbot_display, token_usage_display],
-            )
+        chat_msg = chat_input.submit(
+            add_message,
+            [chatbot_display, chat_input],
+            [chatbot_display, chat_input],
+        )
+        bot_msg = chat_msg.then(bot, chatbot_display, [chatbot_display, token_usage_display], api_name="bot_response")
+        bot_msg.then(lambda: gr.MultimodalTextbox(interactive=True), None, [chat_input])
 
-            send_button.click(
-                respond,
-                [user_query_textbox, chatbot_display],
-                [user_query_textbox, chatbot_display, token_usage_display],
-            )
+        chatbot_display.clear(
+            clear, [], [chatbot_display, token_usage_display], api_name="clear_chat"
+        )
 
-            llm_model_dropdown.change(
-                lambda model_name: llm_client.change_model(model_name),
-                [llm_model_dropdown],
-                [],
-            )
+        llm_model_dropdown.change(
+            lambda model: llm_client.set_model(model),
+            inputs=llm_model_dropdown,
+            outputs=[],
+        )
 
     return demo
+
+
+def add_message(history, message):
+    for x in message["files"]:
+        history.append({"role": "user", "content": {"path": x}})
+    if message["text"] is not None:
+        history.append({"role": "user", "content": message["text"]})
+    return history, gr.MultimodalTextbox(value=None, interactive=False)
 
 
 def get_gradio_app(llm_client: LLMClient):

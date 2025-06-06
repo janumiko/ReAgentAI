@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, List
+from typing import Optional, List, Sequence, Tuple
 
 from pydantic_ai import Agent, Tool
 
@@ -11,7 +11,7 @@ class LLMClient:
     def __init__(
         self,
         model_name: str = "google-gla:gemini-2.0-flash",
-        tools: Optional[List[Tool]] = None,
+        tools: Sequence[Tool] = (),
         instructions: Optional[str] = None,
     ):
         """
@@ -21,21 +21,23 @@ class LLMClient:
             model_name (str): The name of the language model to use.
         """
         self.model_name = model_name
-        self.tools = tools if tools is not None else []
+        self.instructions = instructions
+        self.tools = tools
+        
         self.agent = Agent(model_name, tools=tools, instructions=instructions)
+
         self.result_history = None
         logger.info(f"LLMClient initialized with model: {model_name}")
 
-    def change_model(self, model_name: str):
+    def set_model(self, model_name: str):
         """
-        Changes the language model used by the client.
-
+        Sets the model for the LLMClient.
         Args:
-            model_name (str): The name of the new language model.
+            model_name (str): The name of the new language model to use.
         """
         self.model_name = model_name
-        self.agent = Agent(model_name)
-        logger.info(f"LLMClient model changed to: {model_name}")
+        self.agent = Agent(model_name, tools=self.tools, instructions=self.instructions)
+        logger.info(f"LLMClient model set to: {model_name}")
 
     def get_token_usage(self) -> int:
         """
@@ -57,7 +59,7 @@ class LLMClient:
         logger.info("LLMClient chat history cleared.")
         self.result_history = None
 
-    def respond(self, user_query: str, **kwargs) -> List[tuple]:
+    def respond(self, user_query: str, **kwargs) -> str:
         """
         Responds to a user query and updates the chat history asynchronously.
 
@@ -67,7 +69,7 @@ class LLMClient:
             **kwargs: Additional keyword arguments to pass to the agent's run method.
 
         Returns:
-            List[tuple]: Updated chat history with the bot's response.
+            str: The bot's response to the user's query.
         """
         if self.result_history is not None:
             message_history = self.result_history.all_messages()
