@@ -5,8 +5,6 @@ from PIL import Image
 from rdkit import Chem
 from rdkit.Chem import Draw
 
-from src.reagentai.models.llm_output import ImageOutput
-
 logger = logging.getLogger(__name__)
 
 

@@ -44,12 +44,12 @@ def parse_route_dict(route_dict: dict) -> Route:
         n_reactions=score_data["number of reactions"],
         n_precursors=score_data["number of pre-cursors"],
         n_precursors_in_stock=score_data["number of pre-cursors in stock"],
-        avg_template_occurance=score_data["average template occurrence"],
+        avg_template_occurence=score_data["average template occurrence"],
     )
 
     parsed_root_node = parse_node(route_dict)
 
     if parsed_root_node is None:
-        raise ValueError("Could not parse the root node from the 'dict' key.")
+        raise ValueError("Invalid route structure: root node is None or invalid.")
 
     return Route(score=parsed_score, root_node=parsed_root_node)
