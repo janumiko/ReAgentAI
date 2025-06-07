@@ -13,7 +13,7 @@ GEMINI_API_KEY=your_gemini_api_key
 uv run download_public_data data 
 uv run run.py
 ```
-Note: You need a trained model and a stock collection. You can download a public available model based on USPTO and a stock
+Note: You need a trained model and a stock collection. You can download a publicly available model based on USPTO and a stock
 collection from ZINC database using the following command `download_public_data data`.
 #### setup with pip
 ```sh
