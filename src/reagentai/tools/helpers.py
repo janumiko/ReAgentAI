@@ -1,9 +1,7 @@
 import io
-import shutil
-import tempfile
-from typing import Generator, Literal
+from typing import Literal
 
-from PIL import Image as PilImage, ImageColor as PilColor, ImageDraw, ImageFont
+from PIL import Image as PilImage, ImageDraw, ImageFont
 from rdkit import Chem
 from rdkit.Chem import Draw
 
@@ -66,7 +64,7 @@ def parse_node(node_dict: dict, state: NodeProcessingState) -> str:
         child_ids.append(child_id)
 
     node_data = {
-        "id": current_node_id,
+        "node_id": current_node_id,
         "smiles": node_dict["smiles"],
         "children": child_ids,
     }
@@ -88,13 +86,14 @@ def parse_node(node_dict: dict, state: NodeProcessingState) -> str:
     return current_node_id
 
 
-def parse_route_dict(route_dict: dict) -> Route:
+def parse_route_dict(route_dict: dict, route_id: int) -> Route:
     score_data = parse_route_score(route_dict["scores"])
     processing_state = NodeProcessingState()
 
     root_node_id = parse_node(route_dict, processing_state)
 
     return Route(
+        route_id=route_id,
         score_data=score_data,
         root_node_id=root_node_id,
         mol_nodes=processing_state.processed_mol_nodes,
@@ -129,18 +128,19 @@ def draw_rounded_rectangle(img: PilImage.Image, color: str, arc_size: int = 20) 
 
 
 def molecules_to_images(
-    mols: dict[int, str], frame_colors: list[str], size: int = 400
+    mols: list[MolNode], in_stock_colors: dict[bool, str], size: int = 400
 ) -> list[PilImage.Image]:
-    rd_mols = [Chem.MolFromSmiles(smiles) for smiles in mols.values()]
+    rd_mols = [Chem.MolFromSmiles(mol.smiles) for mol in mols]
     grid_img = Draw.MolsToGridImage(rd_mols, molsPerRow=len(mols), subImgSize=(size, size))
 
     if isinstance(grid_img, bytes):
         grid_img = PilImage.open(io.BytesIO(grid_img))
-    images = []
 
-    for idx, frame_color in enumerate(frame_colors):
+    images = []
+    for idx, mol in enumerate(mols):
         image_obj = grid_img.crop((size * idx, 0, size * (idx + 1), size))
         image_obj = crop_image(image_obj)
+        frame_color = in_stock_colors[mol.in_stock]
         images.append(draw_rounded_rectangle(image_obj, frame_color))
 
     return images
@@ -154,16 +154,21 @@ class RouteImageFactory:
         font_size = max(16, self.mol_size // 15)
         self.font = ImageFont.load_default()
 
-        self._smiles_lookup = dict(self._extract_molecules_from_node(route.root_node))
-
         images = molecules_to_images(
-            self._smiles_lookup.keys,
-            [in_stock_colors[val] for val in self._smiles_lookup.values()],
+            mols=route.mol_nodes,
+            in_stock_colors=in_stock_colors,
             size=self.mol_size,
         )
-        self._image_lookup = dict(zip(self._smiles_lookup.keys(), images, strict=True))
+        self._image_lookup = {
+            mol.smiles: img for mol, img in zip(route.mol_nodes, images, strict=True)
+        }
 
-        self._mol_tree = self._build_plot_tree(route.root_node)
+        self._reaction_lookup = {react.node_id: react for react in route.reaction_nodes}
+        self._mol_lookup = {mol.node_id: mol for mol in route.mol_nodes}
+
+        root_mol_node = self._mol_lookup.get(route.root_node_id)
+        self._mol_tree = self._build_plot_tree(root_mol_node)
+
         self._add_effective_size(self._mol_tree)
         pos0 = (
             self._mol_tree["eff_width"] - self._mol_tree["image"].width + self.margin,
@@ -180,32 +185,27 @@ class RouteImageFactory:
         self._make_image(self._mol_tree)
         # self.image = crop_image(self.image, margin=0)
 
-    def _extract_molecules_from_node(self, node: Node) -> Generator[tuple[str, bool], None, None]:
-        if isinstance(node, MolNode):
-            yield (node.smiles, node.in_stock)
-
-        for child in node.children:
-            self._extract_molecules_from_node(child)
-
-    def _build_plot_tree(self, node: Node) -> dict | None:
-        if not isinstance(node, MolNode):
-            return None
-
+    def _build_plot_tree(self, current_mol_node: MolNode) -> dict | None:
+        """
+        Recursively builds a tree structure for plotting, starting from a MolNode object.
+        It uses the node lists within self.route to resolve children by their IDs.
+        """
         tree_dict = {
-            "smiles": node.smiles,
-            "image": self._image_lookup[node.smiles],
-            "id": node.id_in_route,
+            "smiles": current_mol_node.smiles,
+            "image": self._image_lookup[current_mol_node.smiles],
+            "id": current_mol_node.node_id,
         }
 
         children_trees = []
-        if node.children:
-            reaction_node = node.children[0]
 
-            if isinstance(reaction_node, ReactionNode):
-                for reactant_node in reaction_node.children:
-                    child_tree = self._build_plot_tree(reactant_node)
-                    if child_tree:
-                        children_trees.append(child_tree)
+        if current_mol_node.children:
+            reaction_node_id = current_mol_node.children[0]
+            reaction_node_obj = self._reaction_lookup.get(reaction_node_id)
+
+            for precursor_mol_node_id in reaction_node_obj.children:
+                precursor_mol_node_obj = self._mol_lookup.get(precursor_mol_node_id)
+                child_tree = self._build_plot_tree(precursor_mol_node_obj)
+                children_trees.append(child_tree)
 
         tree_dict["children"] = children_trees
         return tree_dict

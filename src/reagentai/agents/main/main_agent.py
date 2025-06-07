@@ -5,11 +5,12 @@ from pydantic_ai import Tool
 
 from src.reagentai.common.client import LLMClient
 from src.reagentai.constants import AIZYNTHFINDER_CONFIG_PATH
+from src.reagentai.tools.drawing import route_to_image, smiles_to_image
 from src.reagentai.tools.retrosynthesis import (
     initialize_aizynthfinder,
     perform_retrosynthesis,
 )
-from src.reagentai.tools.smiles import is_valid_smiles, smiles_to_image
+from src.reagentai.tools.smiles import is_valid_smiles
 
 MAIN_AGENT_INSTRUCTIONS_PATH: str = "src/reagentai/agents/main/instructions.txt"
 MAIN_AGENT_MODEL: str = "google-gla:gemini-2.0-flash"
@@ -37,7 +38,12 @@ def create_main_agent() -> LLMClient:
     with open(MAIN_AGENT_INSTRUCTIONS_PATH) as instructions_file:
         instructions = instructions_file.read()
 
-    tools = [Tool(perform_retrosynthesis), Tool(is_valid_smiles), Tool(smiles_to_image)]
+    tools = [
+        Tool(perform_retrosynthesis),
+        Tool(is_valid_smiles),
+        Tool(smiles_to_image),
+        Tool(route_to_image),
+    ]
 
     aizynth_finder = initialize_aizynthfinder(
         config_path=AIZYNTHFINDER_CONFIG_PATH,
