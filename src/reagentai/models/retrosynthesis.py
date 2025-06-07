@@ -2,7 +2,8 @@ from typing import Union
 
 from pydantic import BaseModel, Field
 
-Node = Union["MolNode", "ReactionNode"]
+
+Node = Union['MolNode', 'ReactionNode']
 
 
 class ReactionMetadata(BaseModel):
@@ -18,9 +19,9 @@ class ReactionMetadata(BaseModel):
     policy_probability: float
 
 
-class Score(BaseModel):
+class ScoreData(BaseModel):
     """
-    Score for a retrosynthesis route.
+    Represents the scoring data for a retrosynthesis route.
 
     Attributes:
         state_score (float): Overall score for the retrosynthesis state.
@@ -37,55 +38,58 @@ class Score(BaseModel):
     avg_template_occurence: float
 
 
-class MolNode(BaseModel):
+class NodeBase(BaseModel):
     """
-    Represents a molecular node in the retrosynthesis route.
+    Represents a base node in a retrosynthesis tree.
 
     Attributes:
-        type (str): Type of the node, should be "mol".
-        in_stock (bool): Indicates if the molecule is in stock.
-        is_chemical (bool): Indicates if the node represents a chemical.
-        smiles (str): SMILES representation of the molecule.
-        children (List[Node]): List of child nodes, which can be either molecular or reaction nodes.
+        id (str): Unique identifier for the node.
+        smiles (str): SMILES string representing the chemical structure.
+        children (list[str]): List of IDs of child nodes (default is an empty list).
     """
 
-    type: str
+    id: str
+    smiles: str
+    children: list[str] = Field(default_factory=list)
+
+
+class MolNode(NodeBase):
+    """
+    Represents a molecular node in a retrosynthesis graph.
+
+    Attributes:
+        in_stock (bool): Indicates whether the molecule is available in stock.
+        is_chemical (bool): Specifies if the node represents a chemical entity.
+    """
+
     in_stock: bool
     is_chemical: bool
-    smiles: str
-    children: list[Node] = Field(default=list)
 
 
-class ReactionNode(BaseModel):
+class ReactionNode(NodeBase):
     """
-    Represents a reaction node in the retrosynthesis route.
+    Represents a node in a retrosynthesis reaction tree.
 
     Attributes:
-        type (str): Type of the node, should be "reaction".
-        smiles (str): SMILES representation of the reaction.
         metadata (ReactionMetadata): Metadata associated with the reaction.
-        children (List[Node]): List of child nodes, which can be either molecular or reaction nodes.
     """
 
-    type: str
-    smiles: str
     metadata: ReactionMetadata
-    children: list[Node] = Field(default=list)
-
 
 class Route(BaseModel):
     """
-    Represents a retrosynthesis route.
+    Represents a retrosynthetic route consisting of molecular and reaction nodes.
 
     Attributes:
-        id (str): Unique identifier for the route.
-        target_smiles (str): SMILES representation of the target molecule.
-        scores (Score): Score associated with the route.
-        root_node (Node): The root node of the retrosynthesis route, which can be a molecular or reaction node.
+        score_data (ScoreData): The scoring information associated with the route.
+        root_node_id (str): The identifier of the root node in the route.
+        mols_nodes (list[MolNode]): List of molecular nodes in the route.
+        reactions_nodes (list[ReactionNode]): List of reaction nodes in the route.
     """
-
-    score: Score
-    root_node: Node
+    score_data: ScoreData
+    root_node_id: str
+    mol_nodes: list[MolNode] = Field(default_factory=list)
+    reaction_nodes: list[ReactionNode] = Field(default_factory=list)
 
 
 class RouteCollection(BaseModel):
