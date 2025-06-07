@@ -42,8 +42,7 @@ def route_to_image(routes: Route) -> str:
     Generate an image from a SMILES route.
 
     Args:
-        routes (RouteCollection): The collection of retrosynthesis routes.
-        idx (int): The index of the route to generate an image for. Default is 0.
+        routes (Route): The retrosynthesis route to convert to an image.
 
     Returns:
         str: The file path to the generated image.

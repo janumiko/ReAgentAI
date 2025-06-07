@@ -327,11 +327,11 @@ class RouteImageFactory:
         children_height = sum(c["eff_height"] for c in children) + self.margin * (
             len(children) - 1
         )
-        childen_leftmost = pos[0] - self.margin - max(c["image"].width for c in children)
+        children_leftmost = pos[0] - self.margin - max(c["image"].width for c in children)
         child_y = mid_y - int(children_height * 0.5)
         for child in children:
             y_adjust = int((child["eff_height"] - child["image"].height) * 0.5)
-            self._add_pos(child, (childen_leftmost, child_y + y_adjust))
+            self._add_pos(child, (children_leftmost, child_y + y_adjust))
             child_y += self.margin + child["eff_height"]
 
     def _make_image(self, tree_dict: dict):
