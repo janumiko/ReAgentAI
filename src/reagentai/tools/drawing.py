@@ -39,7 +39,7 @@ def smiles_to_image(smiles: str, size: tuple[int, int] = (600, 300)) -> str:
 
 def route_to_image(routes: Route) -> str:
     """
-    Generate an image from a SMILES route.
+    Generate an image from a retrosynthesis route.
 
     Args:
         routes (Route): The retrosynthesis route to convert to an image.
