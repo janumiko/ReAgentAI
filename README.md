@@ -7,6 +7,14 @@ Create a `.env` file in the root directory with the following content:
 ```env
 GEMINI_API_KEY=your_gemini_api_key
 ```
+The simplest way to run the application is to use `uv` and `docker` commands:
+```shell
+uv run download_public_data data 
+sudo docker compose up
+```
+Then open your browser and go to:
+http://localhost:7860/ (ReAgentAI)
+http://localhost:5000/ (MLflow)
 
 #### setup with uv
 ```sh

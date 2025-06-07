@@ -1,13 +1,17 @@
 version: '3'
 services:
   mlflow:
-    image: mlflow-server
+    build:
+      context: .
+      dockerfile: Dockerfile.mlflow
     ports:
       - "5000:5000"
     networks:
       - mlflow-network
   reagentai:
-    image: reagentai
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
       - "7860:7860"
     env_file:
