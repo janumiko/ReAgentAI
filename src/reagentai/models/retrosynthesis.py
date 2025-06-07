@@ -28,14 +28,14 @@ class ScoreData(BaseModel):
         n_reactions (int): Number of reactions in the route.
         n_precursors (int): Number of precursors in the route.
         n_precursors_in_stock (int): Number of precursors that are in stock.
-        avg_template_occurence (float): Average occurrence of templates in the route.
+        avg_template_occurrence (float): Average occurrence of templates in the route.
     """
 
     state_score: float
     n_reactions: int
     n_precursors: int
     n_precursors_in_stock: int
-    avg_template_occurence: float
+    avg_template_occurrence: float
 
 
 class NodeBase(BaseModel):
@@ -84,8 +84,8 @@ class Route(BaseModel):
         route_id (int): Unique identifier for the route.
         root_node_id (str): The identifier of the root node in the route.
         score_data (ScoreData): The scoring information associated with the route.
-        mols_nodes (list[MolNode]): List of molecular nodes in the route.
-        reactions_nodes (list[ReactionNode]): List of reaction nodes in the route.
+        mol_nodes (list[MolNode]): List of molecular nodes in the route.
+        reaction_nodes (list[ReactionNode]): List of reaction nodes in the route.
     """
     route_id: int
     root_node_id: str

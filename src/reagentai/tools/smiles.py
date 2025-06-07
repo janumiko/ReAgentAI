@@ -21,6 +21,6 @@ def is_valid_smiles(smiles: str, sanitize: bool = True) -> bool:
     except Exception:
         mol = None
 
-    logging.info(f"SMILES: {smiles}, Valid: {mol is not None}")
+    logger.info(f"SMILES: {smiles}, Valid: {mol is not None}")
 
     return mol is not None

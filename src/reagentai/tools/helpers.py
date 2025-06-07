@@ -58,7 +58,7 @@ def parse_route_score(score_dict: dict) -> ScoreData:
         "number of reactions": "n_reactions",
         "number of pre-cursors": "n_precursors",
         "number of pre-cursors in stock": "n_precursors_in_stock",
-        "average template occurrence": "avg_template_occurence",
+        "average template occurrence": "avg_template_occurrence",
     }
 
     parsed_score_dict = {}
@@ -99,7 +99,7 @@ def parse_node(node_dict: dict, state: NodeProcessingState) -> str:
 
     if node_type == "mol":
         node_data["in_stock"] = node_dict.get("in_stock", False)
-        node_data["is_chemical"] = node_dict.get("is_chemical", True)
+        node_data["is_chemical"] = node_dict.get("is_chemical", False)
         parsed_node = MolNode(**node_data)
         state.processed_mol_nodes.append(parsed_node)
     elif node_type == "reaction":
@@ -173,7 +173,7 @@ def draw_rounded_rectangle(
         img: The PIL Image to draw on.
         color: Color of the rectangle border.
         arc_size: Diameter of the corner arcs.
-        border_width: Width of the border line.
+        width: Width of the border line.
 
     Returns:
         A new PIL Image with the rounded rectangle border.
