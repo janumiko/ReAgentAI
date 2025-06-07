@@ -82,7 +82,7 @@ def parse_node(node_dict: dict, state: NodeProcessingState) -> str:
     """
 
     node_type = node_dict["type"]
-    children_data = node_dict["children"]
+    children_data = node_dict.get("children", [])
 
     current_node_id = state.get_next_id(node_type)
 
