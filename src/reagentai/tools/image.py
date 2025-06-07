@@ -5,9 +5,8 @@ from PIL import Image
 from rdkit import Chem
 from rdkit.Chem import Draw
 
+from src.reagentai.common.utils.image import RouteImageFactory
 from src.reagentai.models.retrosynthesis import Route
-
-from .helpers import RouteImageFactory
 
 logger = logging.getLogger(__name__)
 
