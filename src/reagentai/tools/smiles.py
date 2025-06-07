@@ -29,7 +29,7 @@ def is_valid_smiles(smiles: str, sanitize: bool = True) -> bool:
     return mol is not None
 
 
-def image_from_smiles(smiles: str, size: tuple[int, int] = (600, 300)) -> str:
+def smiles_to_image(smiles: str, size: tuple[int, int] = (600, 300)) -> str:
     """
     Generate an image from a SMILES string.
 

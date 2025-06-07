@@ -9,7 +9,7 @@ AIZYNTHFINDER_CONFIG_PATH: str = "data/config.yml"
 EXAMPLE_PROMPTS = [
     "Show the SMILES and structure of Caffeine.",
     "Suggest a retrosynthesis for Aspirin. Show the top 3 routes.",
-    "Suggest a retrosynthesis for Ibuprofen. Show molecule images from the first route.",
+    "Suggest a retrosynthesis for Ibuprofen. Show all molecule images from the first route.",
 ]
 
 DEFAULT_LOG_LEVEL: int = INFO
