@@ -7,7 +7,6 @@ from rdkit.Chem import Draw
 
 from src.reagentai.models.retrosynthesis import (
     MolNode,
-    Node,
     ReactionMetadata,
     ReactionNode,
     Route,
@@ -15,6 +14,7 @@ from src.reagentai.models.retrosynthesis import (
 )
 
 
+### Helper classes and functions for processing retrosynthesis routes
 class NodeProcessingState:
     """Helper class to keep track of ID counters and collected nodes."""
 
@@ -25,6 +25,14 @@ class NodeProcessingState:
         self.processed_reaction_nodes: list[ReactionNode] = []
 
     def get_next_id(self, node_type: Literal["mol", "reaction"]) -> str:
+        """
+        Generates the next unique ID for a node based on its type.
+        Args:
+            node_type (Literal["mol", "reaction"]): The type of the node for which to generate an ID.
+        Returns:
+            str: A unique identifier for the node, formatted as "mol-{counter}" or "react-{counter}".
+        """
+
         if node_type == "mol":
             self.mol_counter += 1
             return f"mol-{self.mol_counter}"
@@ -36,6 +44,15 @@ class NodeProcessingState:
 
 
 def parse_route_score(score_dict: dict) -> ScoreData:
+    """
+    Parses a score dictionary from the LLM response into a ScoreData object.
+
+    Args:
+        score_dict (dict): The dictionary containing score data from the LLM response.
+    Returns:
+        ScoreData: An instance of ScoreData populated with the parsed values.
+    """
+
     key_map = {
         "state score": "state_score",
         "number of reactions": "n_reactions",
@@ -53,6 +70,17 @@ def parse_route_score(score_dict: dict) -> ScoreData:
 
 
 def parse_node(node_dict: dict, state: NodeProcessingState) -> str:
+    """
+    Recursively parses a node dictionary into a MolNode or ReactionNode object,
+    updating the processing state with the parsed nodes.
+
+    Args:
+        node_dict (dict): The dictionary representation of the node.
+        state (NodeProcessingState): The state object to keep track of IDs and processed nodes.
+    Returns:
+        str: The unique identifier for the parsed node.
+    """
+
     node_type = node_dict.get("type")
     children_data = node_dict.get("children", [])
 
@@ -70,14 +98,14 @@ def parse_node(node_dict: dict, state: NodeProcessingState) -> str:
     }
 
     if node_type == "mol":
-        node_data["in_stock"] = node_dict.get("in stock", False)
-        node_data["is_chemical"] = node_dict.get("is chemical", True)
+        node_data["in_stock"] = node_dict.get("in_stock", False)
+        node_data["is_chemical"] = node_dict.get("is_chemical", True)
         parsed_node = MolNode(**node_data)
         state.processed_mol_nodes.append(parsed_node)
     elif node_type == "reaction":
         metadata = ReactionMetadata(
             classification=node_dict.get("classification", ""),
-            policy_probability=node_dict.get("policy probability", 0.0),
+            policy_probability=node_dict.get("policy_probability", 0.0),
         )
         node_data["metadata"] = metadata
         parsed_node = ReactionNode(**node_data)
@@ -87,6 +115,16 @@ def parse_node(node_dict: dict, state: NodeProcessingState) -> str:
 
 
 def parse_route_dict(route_dict: dict, route_id: int) -> Route:
+    """
+    Parses a route dictionary into a Route object.
+
+    Args:
+        route_dict (dict): The dictionary representation of the route.
+        route_id (int): The unique identifier for the route.
+    Returns:
+        Route: An instance of Route populated with the parsed data.
+    """
+
     score_data = parse_route_score(route_dict["scores"])
     processing_state = NodeProcessingState()
 
@@ -101,7 +139,18 @@ def parse_route_dict(route_dict: dict, route_id: int) -> Route:
     )
 
 
+### Image processing functions for retrosynthesis routes
+### Copied and refined from the AiZynthFinder project
 def crop_image(img: PilImage, margin: int = 20) -> PilImage:
+    """
+    Crops the image to remove white borders and adds a margin around the cropped area.
+
+    Args:
+        img: The PIL Image to crop.
+        margin: The margin to add around the cropped area.
+    Returns:
+        A new PIL Image with the cropped content and added margin.
+    """
     non_white_pixels = PilImage.eval(img, lambda x: 255 - x).getbbox()
     if not non_white_pixels:
         return img
@@ -111,25 +160,60 @@ def crop_image(img: PilImage, margin: int = 20) -> PilImage:
     return out
 
 
-def draw_rounded_rectangle(img: PilImage.Image, color: str, arc_size: int = 20) -> PilImage:
+def draw_rounded_rectangle(
+    img: PilImage.Image,
+    color: str,
+    arc_size: int = 20,
+    width: int = 2,
+) -> PilImage.Image:
+    """
+    Draws a rounded rectangle border on a copy of the given image.
+
+    Args:
+        img: The PIL Image to draw on.
+        color: Color of the rectangle border.
+        arc_size: Diameter of the corner arcs.
+        border_width: Width of the border line.
+
+    Returns:
+        A new PIL Image with the rounded rectangle border.
+    """
+
     copy = img.copy()
     draw = ImageDraw.Draw(copy)
     x0, y0, x1, y1 = 0, 0, copy.width - 1, copy.height - 1
     arc_size_half = arc_size // 2
-    draw.arc((x0, y0, x0 + arc_size, y0 + arc_size), 180, 270, color, width=2)
-    draw.arc((x1 - arc_size, y0, x1, y0 + arc_size), 270, 360, color, width=2)
-    draw.arc((x1 - arc_size, y1 - arc_size, x1, y1), 0, 90, color, width=2)
-    draw.arc((x0, y1 - arc_size, x0 + arc_size, y1), 90, 180, color, width=2)
-    draw.line((x0 + arc_size_half, y0, x1 - arc_size_half, y0), fill=color, width=2)
-    draw.line((x1, y0 + arc_size_half, x1, y1 - arc_size_half), fill=color, width=2)
-    draw.line((x0 + arc_size_half, y1, x1 - arc_size_half, y1), fill=color, width=2)
-    draw.line((x0, y0 + arc_size_half, x0, y1 - arc_size_half), fill=color, width=2)
+
+    # Arcs for corners
+    draw.arc((x0, y0, x0 + arc_size, y0 + arc_size), 180, 270, color, width=width)
+    draw.arc((x1 - arc_size, y0, x1, y0 + arc_size), 270, 360, color, width=width)
+    draw.arc((x1 - arc_size, y1 - arc_size, x1, y1), 0, 90, color, width=width)
+    draw.arc((x0, y1 - arc_size, x0 + arc_size, y1), 90, 180, color, width=width)
+
+    # Lines connecting arcs
+    draw.line((x0 + arc_size_half, y0, x1 - arc_size_half, y0), fill=color, width=width)  # Top
+    draw.line((x1, y0 + arc_size_half, x1, y1 - arc_size_half), fill=color, width=width)  # Right
+    draw.line((x0 + arc_size_half, y1, x1 - arc_size_half, y1), fill=color, width=width)  # Bottom
+    draw.line((x0, y0 + arc_size_half, x0, y1 - arc_size_half), fill=color, width=width)  # Left
     return copy
 
 
 def molecules_to_images(
-    mols: list[MolNode], in_stock_colors: dict[bool, str], size: int = 400
+    mols: list[MolNode],
+    in_stock_colors: dict[bool, str],
+    size: int = 400,
 ) -> list[PilImage.Image]:
+    """
+    Converts a list of MolNode objects to a list of PIL images with rounded rectangles.
+
+    Args:
+        mols (list[MolNode]): List of MolNode objects to convert.
+        in_stock_colors (dict[bool, str]): Dictionary mapping in-stock status to colors.
+        size (int): Size of the images to generate.
+    Returns:
+        list[PilImage.Image]: List of PIL images with rounded rectangles.
+    """
+
     rd_mols = [Chem.MolFromSmiles(mol.smiles) for mol in mols]
     grid_img = Draw.MolsToGridImage(rd_mols, molsPerRow=len(mols), subImgSize=(size, size))
 
@@ -147,11 +231,16 @@ def molecules_to_images(
 
 
 class RouteImageFactory:
+    """
+    Factory class to create an image representation of a retrosynthetic route.
+    This class builds a tree structure from the route's molecular and reaction nodes,
+    calculates their effective sizes, positions them, and draws the final image.
+    """
+
     def __init__(self, route: Route, margin: int = 100, mol_size: int = 400):
         in_stock_colors = {True: "green", False: "orange"}
         self.margin = margin
         self.mol_size = mol_size
-        font_size = max(16, self.mol_size // 15)
         self.font = ImageFont.load_default()
 
         images = molecules_to_images(
@@ -183,13 +272,11 @@ class RouteImageFactory:
         )
         self._draw = ImageDraw.Draw(self.image)
         self._make_image(self._mol_tree)
-        # self.image = crop_image(self.image, margin=0)
+        self.image = crop_image(self.image, margin=40)
 
     def _build_plot_tree(self, current_mol_node: MolNode) -> dict | None:
-        """
-        Recursively builds a tree structure for plotting, starting from a MolNode object.
-        It uses the node lists within self.route to resolve children by their IDs.
-        """
+        """Recursively builds a tree structure for plotting, starting from a MolNode object."""
+
         tree_dict = {
             "smiles": current_mol_node.smiles,
             "image": self._image_lookup[current_mol_node.smiles],
@@ -211,9 +298,12 @@ class RouteImageFactory:
         return tree_dict
 
     def _add_effective_size(self, tree_dict: dict):
+        """Recursively calculates the effective size of the tree dictionary."""
+
         children = tree_dict.get("children", [])
         for child in children:
             self._add_effective_size(child)
+
         if children:
             tree_dict["eff_height"] = sum(c["eff_height"] for c in children) + self.margin * (
                 len(children) - 1
@@ -226,6 +316,8 @@ class RouteImageFactory:
             tree_dict["eff_width"] = tree_dict["image"].width + self.margin
 
     def _add_pos(self, tree_dict: dict, pos: tuple[int, int]):
+        """Recursively adds position information to the tree dictionary."""
+
         tree_dict["left"] = pos[0]
         tree_dict["top"] = pos[1]
         children = tree_dict.get("children")
@@ -243,6 +335,8 @@ class RouteImageFactory:
             child_y += self.margin + child["eff_height"]
 
     def _make_image(self, tree_dict: dict):
+        """Draws the molecule image and its connections on the canvas."""
+
         self.image.paste(tree_dict["image"], (tree_dict["left"], tree_dict["top"]))
         self._draw_number_on_frame(tree_dict)
         children = tree_dict.get("children")
@@ -271,8 +365,9 @@ class RouteImageFactory:
             (mid_x - 8, mid_y - 8, mid_x + 8, mid_y + 8), fill="black", outline="black"
         )
 
-    def _draw_number_on_frame(self, tree_dict: dict):  # REVISED METHOD
+    def _draw_number_on_frame(self, tree_dict: dict):
         """Draws the molecule ID as black text on the top-left corner of its frame."""
+
         image_x, image_y = tree_dict["left"], tree_dict["top"]
         mol_id = tree_dict["id"]
         text = str(mol_id)
@@ -286,5 +381,5 @@ class RouteImageFactory:
             text_pos,
             text,
             font=self.font,
-            fill="black",  # Changed from "white"
+            fill="black",
         )
