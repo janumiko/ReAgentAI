@@ -4,6 +4,7 @@ from aizynthfinder.aizynthfinder import AiZynthFinder
 from pydantic_ai import Tool
 
 from src.reagentai.common.client import LLMClient
+from src.reagentai.common.mlflow_tracking import MLflowTracker
 from src.reagentai.constants import AIZYNTHFINDER_CONFIG_PATH
 from src.reagentai.tools.retrosynthesis import (
     initialize_aizynthfinder,
@@ -13,6 +14,9 @@ from src.reagentai.tools.smiles import is_valid_smiles, smiles_to_image
 
 MAIN_AGENT_INSTRUCTIONS_PATH: str = "src/reagentai/agents/main/instructions.txt"
 MAIN_AGENT_MODEL: str = "google-gla:gemini-2.0-flash"
+
+# Initialize MLflow tracker for the main agent
+agent_mlflow_tracker = MLflowTracker(experiment_name="main_agent_interactions")
 
 
 @dataclass
@@ -53,6 +57,7 @@ def create_main_agent() -> LLMClient:
         instructions=instructions,
         dependency_types=MainAgentDependencyTypes,
         dependencies=MainAgentDependencyTypes(aizynth_finder=aizynth_finder),
+        mlflow_tracker=agent_mlflow_tracker,
     )
 
     return llm_client

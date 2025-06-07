@@ -6,11 +6,13 @@ from aizynthfinder.analysis.utils import RouteSelectionArguments
 from aizynthfinder.context.config import Configuration
 from pydantic_ai import RunContext
 
+from src.reagentai.common.mlflow_tracking import MLflowTracker
 from src.reagentai.models.retrosynthesis import RouteCollection
 
 from .helpers import parse_route_dict
 
 logger = logging.getLogger(__name__)
+mlflow_tracker = MLflowTracker(experiment_name="retrosynthesis_experiments")
 
 
 class HasAiZynthFinder(Protocol):
@@ -51,6 +53,19 @@ def initialize_aizynthfinder(
         RetrosynthesisCache.clear()
         RetrosynthesisCache.finder_config = config
 
+    # Log initialization parameters with MLflow
+    run_id = mlflow_tracker.start_run("aizynthfinder_initialization")
+    if run_id:
+        mlflow_tracker.log_params(
+            {
+                "stock": stock,
+                "expansion_policy": expansion_policy,
+                "filter_policy": filter_policy,
+                "config_path": config_path,
+            }
+        )
+        mlflow_tracker.end_run()
+
     return finder
 
 
@@ -90,33 +105,85 @@ def perform_retrosynthesis(
 
     finder = ctx.deps.aizynth_finder
 
+    # Start MLflow run for this retrosynthesis attempt
+    run_name = f"retrosynthesis_{target_smile[:10]}"
+    mlflow_tracker.start_run(run_name)
+    mlflow_tracker.log_params({"target_smiles": target_smile})
+
     # 1. Check if the target SMILES is already in cache
     cached_routes = RetrosynthesisCache.get(target_smile)
     if cached_routes is not None:
         logger.info(f"Retrieving full retrosynthesis data for {target_smile} from cache.")
+        mlflow_tracker.log_params({"cache_hit": True})
+        mlflow_tracker.end_run()
         return cached_routes
 
     # 2. If not in cache, perform search using the global instance
     logger.info(f"Performing retrosynthesis for {target_smile}...")
+    mlflow_tracker.log_params({"cache_hit": False})
     selection_args = RouteSelectionArguments(nmin=5, nmax=25)
+    mlflow_tracker.log_params(
+        {"selection_nmin": selection_args.nmin, "selection_nmax": selection_args.nmax}
+    )
 
-    finder.target_smiles = target_smile
-    finder.tree_search()
-    finder.build_routes(selection_args)
-    finder.routes.compute_scores(*finder.scorers.objects())
+    try:
+        # Track start time for performance metrics
+        import time
 
-    # 3. Extract all routes and statistics
-    routes = finder.routes.dict_with_scores()
+        start_time = time.time()
 
-    if not routes:  # Check if any routes were found
-        raise ValueError(f"No retrosynthesis routes found for target: {target_smile}")
+        finder.target_smiles = target_smile
+        finder.tree_search()
 
-    # 4. Convert to RouteCollection
-    routes = [parse_route_dict(route) for route in routes]
-    route_collection = RouteCollection(routes=routes, n_routes=len(routes))
-    logger.info(f"Found {len(route_collection)} retrosynthesis routes for {target_smile}.")
+        search_time = time.time() - start_time
+        mlflow_tracker.log_metrics({"search_time_seconds": search_time})
 
-    # 5. Cache the result
-    RetrosynthesisCache.add(target_smile, route_collection)
+        finder.build_routes(selection_args)
+        finder.routes.compute_scores(*finder.scorers.objects())
 
-    return route_collection
+        # 3. Extract all routes and statistics
+        routes = finder.routes.dict_with_scores()
+
+        if not routes:  # Check if any routes were found
+            mlflow_tracker.log_params({"routes_found": False})
+            mlflow_tracker.end_run()
+            raise ValueError(f"No retrosynthesis routes found for target: {target_smile}")
+
+        # 4. Convert to RouteCollection
+        routes = [parse_route_dict(route) for route in routes]
+        route_collection = RouteCollection(routes=routes, n_routes=len(routes))
+        logger.info(f"Found {len(route_collection)} retrosynthesis routes for {target_smile}.")
+
+        # Log metrics about the found routes
+        mlflow_tracker.log_metrics(
+            {
+                "num_routes": len(routes),
+                "best_state_score": routes[0].score.state_score if routes else 0,
+                "avg_reactions_per_route": sum(r.score.n_reactions for r in routes) / len(routes)
+                if routes
+                else 0,
+            }
+        )
+
+        # Generate and log visualization for the best route if routes exist
+        if routes and hasattr(finder, "plot_route"):
+            try:
+                from src.reagentai.tools.smiles import smiles_to_image
+
+                best_route_img = smiles_to_image(target_smile)
+                mlflow_tracker.log_artifact(best_route_img)
+            except Exception as e:
+                logger.warning(f"Failed to generate route visualization: {e}")
+
+        # 5. Cache the result
+        RetrosynthesisCache.add(target_smile, route_collection)
+
+        mlflow_tracker.log_params({"routes_found": True})
+        mlflow_tracker.end_run()
+        return route_collection
+
+    except Exception as e:
+        # Log any errors that occur during retrosynthesis
+        mlflow_tracker.log_params({"error": str(e), "error_type": type(e).__name__})
+        mlflow_tracker.end_run()
+        raise

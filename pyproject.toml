@@ -9,6 +9,7 @@ dependencies = [
     "pydantic-ai>=0.2.4",
     "python-dotenv>=1.1.0",
     "gradio>=5.29.1",
+    "mlflow>=2.22.1",
 ]
 
 [tool.black]
