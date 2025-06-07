@@ -22,6 +22,7 @@ GEMINI_API_KEY=your_gemini_api_key
 You need a trained model and a stock collection. You can download a public available model based on USPTO and a stock
 collection from ZINC database.
 ```sh
+mkdir data
 download_public_data data
 ```
 
