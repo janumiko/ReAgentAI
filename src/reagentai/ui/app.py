@@ -27,7 +27,6 @@ def create_settings_panel(chat_input_component: gr.MultimodalTextbox):
         gr.Examples(
             examples=EXAMPLE_PROMPTS,
             inputs=chat_input_component,
-            show_label=False,
         )
 
     return llm_model_dropdown, token_usage_display
