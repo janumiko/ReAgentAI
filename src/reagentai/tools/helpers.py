@@ -81,8 +81,8 @@ def parse_node(node_dict: dict, state: NodeProcessingState) -> str:
         str: The unique identifier for the parsed node.
     """
 
-    node_type = node_dict.get("type")
-    children_data = node_dict.get("children", [])
+    node_type = node_dict["type"]
+    children_data = node_dict["children"]
 
     current_node_id = state.get_next_id(node_type)
 
@@ -98,14 +98,15 @@ def parse_node(node_dict: dict, state: NodeProcessingState) -> str:
     }
 
     if node_type == "mol":
-        node_data["in_stock"] = node_dict.get("in_stock", False)
-        node_data["is_chemical"] = node_dict.get("is_chemical", False)
+        node_data["in_stock"] = node_dict["in_stock"]
+        node_data["is_chemical"] = node_dict["is_chemical"]
         parsed_node = MolNode(**node_data)
         state.processed_mol_nodes.append(parsed_node)
     elif node_type == "reaction":
+        metadata_dict = node_dict["metadata"]
         metadata = ReactionMetadata(
-            classification=node_dict.get("classification", ""),
-            policy_probability=node_dict.get("policy_probability", 0.0),
+            classification=metadata_dict["classification"],
+            policy_probability=metadata_dict["policy_probability"],
         )
         node_data["metadata"] = metadata
         parsed_node = ReactionNode(**node_data)
@@ -238,11 +239,18 @@ class RouteImageFactory:
     """
 
     def __init__(self, route: Route, margin: int = 100, mol_size: int = 400):
+        """
+        Args:
+            route (Route): The retrosynthetic route to visualize.
+            margin (int): Margin around the image.
+            mol_size (int): Size of each molecule image.
+        """
         in_stock_colors = {True: "green", False: "orange"}
         self.margin = margin
         self.mol_size = mol_size
         self.font = ImageFont.load_default()
 
+        # Convert the route's molecular nodes to images with rounded rectangles
         images = molecules_to_images(
             mols=route.mol_nodes,
             in_stock_colors=in_stock_colors,
@@ -252,12 +260,15 @@ class RouteImageFactory:
             mol.smiles: img for mol, img in zip(route.mol_nodes, images, strict=True)
         }
 
+        # Create lookup dictionaries for reaction and molecular nodes
         self._reaction_lookup = {react.node_id: react for react in route.reaction_nodes}
         self._mol_lookup = {mol.node_id: mol for mol in route.mol_nodes}
 
+        # Build the plot tree starting from the root node
         root_mol_node = self._mol_lookup.get(route.root_node_id)
         self._mol_tree = self._build_plot_tree(root_mol_node)
 
+        # Calculate the effective size of the tree and set initial positions
         self._add_effective_size(self._mol_tree)
         pos0 = (
             self._mol_tree["eff_width"] - self._mol_tree["image"].width + self.margin,
@@ -265,6 +276,7 @@ class RouteImageFactory:
         )
         self._add_pos(self._mol_tree, pos0)
 
+        # Create a blank image canvas with the calculated effective size
         self.image = PilImage.new(
             "RGB",
             (self._mol_tree["eff_width"] + self.margin, self._mol_tree["eff_height"]),
@@ -272,10 +284,19 @@ class RouteImageFactory:
         )
         self._draw = ImageDraw.Draw(self.image)
         self._make_image(self._mol_tree)
+
+        # Crop the image to remove excess white space
         self.image = crop_image(self.image, margin=40)
 
     def _build_plot_tree(self, current_mol_node: MolNode) -> dict | None:
-        """Recursively builds a tree structure for plotting, starting from a MolNode object."""
+        """
+        Recursively builds a tree structure for plotting, starting from a MolNode object.
+
+        Args:
+            current_mol_node (MolNode): The current molecular node to process.
+        Returns:
+            dict | None: A dictionary representing the tree structure, or None if no children exist.
+        """
 
         tree_dict = {
             "smiles": current_mol_node.smiles,
@@ -297,8 +318,13 @@ class RouteImageFactory:
         tree_dict["children"] = children_trees
         return tree_dict
 
-    def _add_effective_size(self, tree_dict: dict):
-        """Recursively calculates the effective size of the tree dictionary."""
+    def _add_effective_size(self, tree_dict: dict) -> None:
+        """
+        Recursively calculates the effective size of the tree dictionary.
+
+        Args:
+            tree_dict (dict): The dictionary representing the tree structure.
+        """
 
         children = tree_dict.get("children", [])
         for child in children:
@@ -315,37 +341,54 @@ class RouteImageFactory:
             tree_dict["eff_height"] = tree_dict["image"].height
             tree_dict["eff_width"] = tree_dict["image"].width + self.margin
 
-    def _add_pos(self, tree_dict: dict, pos: tuple[int, int]):
-        """Recursively adds position information to the tree dictionary."""
+    def _add_pos(self, tree_dict: dict, pos: tuple[int, int]) -> None:
+        """
+        Recursively adds position information to the tree dictionary.
+
+        Args:
+            tree_dict (dict): The dictionary representing the tree structure.
+            pos (tuple[int, int]): The position (left, top) to assign to the current node.
+        """
 
         tree_dict["left"] = pos[0]
         tree_dict["top"] = pos[1]
         children = tree_dict.get("children")
+
         if not children:
             return
+
         mid_y = pos[1] + int(tree_dict["image"].height * 0.5)
         children_height = sum(c["eff_height"] for c in children) + self.margin * (
             len(children) - 1
         )
         children_leftmost = pos[0] - self.margin - max(c["image"].width for c in children)
         child_y = mid_y - int(children_height * 0.5)
+
         for child in children:
             y_adjust = int((child["eff_height"] - child["image"].height) * 0.5)
             self._add_pos(child, (children_leftmost, child_y + y_adjust))
             child_y += self.margin + child["eff_height"]
 
-    def _make_image(self, tree_dict: dict):
-        """Draws the molecule image and its connections on the canvas."""
+    def _make_image(self, tree_dict: dict) -> None:
+        """
+        Draws the molecule image and its connections on the canvas.
+
+        Args:
+            tree_dict (dict): The dictionary representing the tree structure for the current node.
+        """
 
         self.image.paste(tree_dict["image"], (tree_dict["left"], tree_dict["top"]))
         self._draw_number_on_frame(tree_dict)
         children = tree_dict.get("children")
+
         if not children:
             return
+
         children_right = max(c["left"] + c["image"].width for c in children)
         mid_x = children_right + int(0.5 * (tree_dict["left"] - children_right))
         mid_y = tree_dict["top"] + int(tree_dict["image"].height * 0.5)
         self._draw.line((tree_dict["left"], mid_y, mid_x, mid_y), fill="black", width=3)
+
         for child in children:
             self._make_image(child)
             child_mid_y = child["top"] + int(0.5 * child["image"].height)
@@ -361,12 +404,18 @@ class RouteImageFactory:
                 fill="black",
                 width=3,
             )
+
         self._draw.ellipse(
             (mid_x - 8, mid_y - 8, mid_x + 8, mid_y + 8), fill="black", outline="black"
         )
 
-    def _draw_number_on_frame(self, tree_dict: dict):
-        """Draws the molecule ID as black text on the top-left corner of its frame."""
+    def _draw_number_on_frame(self, tree_dict: dict) -> None:
+        """
+        Draws the molecule ID as black text on the top-left corner of its frame.
+
+        Args:
+            tree_dict (dict): The dictionary representing the tree structure for the current node.
+        """
 
         image_x, image_y = tree_dict["left"], tree_dict["top"]
         mol_id = tree_dict["id"]

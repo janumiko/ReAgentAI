@@ -37,17 +37,17 @@ def smiles_to_image(smiles: str, size: tuple[int, int] = (600, 300)) -> str:
     return temp_file_path
 
 
-def route_to_image(routes: Route) -> str:
+def route_to_image(route: Route) -> str:
     """
     Generate an image from a retrosynthesis route.
 
     Args:
-        routes (Route): The retrosynthesis route to convert to an image.
+        route (Route): The retrosynthesis route to convert to an image.
 
     Returns:
         str: The file path to the generated image.
     """
-    image = RouteImageFactory(routes).image
+    image = RouteImageFactory(route).image
 
     with tempfile.NamedTemporaryFile(prefix="reagentai_route_", suffix=".png", delete=False) as tmp_file:
         image.save(tmp_file, format="PNG")
