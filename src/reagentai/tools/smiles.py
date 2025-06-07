@@ -33,13 +33,13 @@ def is_valid_smiles(smiles: str, sanitize: bool = True) -> bool:
     return mol is not None
 
 
-def image_from_smiles(smiles: str, size: tuple[int, int] = (300, 300)) -> str:
+def smiles_to_image(smiles: str, size: tuple[int, int] = (600, 300)) -> str:
     """
     Generate an image from a SMILES string.
 
     Args:
         smiles (str): The SMILES string to convert to an image.
-        size (tuple[int, int]): The size of the image in pixels. Default is (300, 300).
+        size (tuple[int, int]): The size of the image in pixels. Default is (600, 300).
 
     Returns:
         str: The file path to the generated image.

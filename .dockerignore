@@ -1,0 +1,22 @@
+# Ignore the non-docker config
+data/config.yml
+
+# Ignore Git and GitHub directories
+.git/
+.github/
+# Ignore Python cache files
+*.pyc
+__pycache__/
+
+# Ignore virtual environment
+.venv/
+
+# Ignore logs
+logs/
+
+# Ignore temporary files
+*.tmp
+*.temp
+
+# Ignore environment variables file
+.env
