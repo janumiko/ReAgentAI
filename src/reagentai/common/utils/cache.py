@@ -4,6 +4,12 @@ from src.reagentai.models.retrosynthesis import RouteCollection
 
 
 class RetrosynthesisCache:
+    """
+    A cache for storing retrosynthesis routes based on target SMILES strings.
+    This class provides methods to add, retrieve, and clear cached routes.
+    It also maintains a configuration for the AiZynthFinder instance used in retrosynthesis.
+    """
+
     routes_cache: dict[str, RouteCollection] = {}
     finder_config: Configuration | None = None
 
