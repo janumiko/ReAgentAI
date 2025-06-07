@@ -2,7 +2,7 @@ from typing import Union
 
 from pydantic import BaseModel, Field
 
-Node = Union['MolNode', 'ReactionNode']
+Node = Union["MolNode", "ReactionNode"]
 
 
 class ReactionMetadata(BaseModel):
@@ -75,6 +75,7 @@ class ReactionNode(NodeBase):
 
     metadata: ReactionMetadata
 
+
 class Route(BaseModel):
     """
     Represents a retrosynthetic route consisting of molecular and reaction nodes.
@@ -86,6 +87,7 @@ class Route(BaseModel):
         mol_nodes (list[MolNode]): List of molecular nodes in the route.
         reaction_nodes (list[ReactionNode]): List of reaction nodes in the route.
     """
+
     route_id: int
     root_node_id: str
     score_data: ScoreData

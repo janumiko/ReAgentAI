@@ -45,9 +45,7 @@ def initialize_aizynthfinder(
     if RetrosynthesisCache.finder_config is None:
         RetrosynthesisCache.finder_config = config
     elif RetrosynthesisCache.finder_config != config:
-        logger.warning(
-            "Configuration has changed since the last initialization. Clearing cache."
-        )
+        logger.warning("Configuration has changed since the last initialization. Clearing cache.")
         RetrosynthesisCache.clear()
         RetrosynthesisCache.finder_config = config
 

@@ -29,7 +29,9 @@ def smiles_to_image(smiles: str, size: tuple[int, int] = (600, 300)) -> str:
 
     PIL_img: Image.Image = Draw.MolToImage(mol, size=size, kekulize=True)
 
-    with tempfile.NamedTemporaryFile(prefix="reagentai_smiles_", suffix=".png", delete=False) as tmp_file:
+    with tempfile.NamedTemporaryFile(
+        prefix="reagentai_smiles_", suffix=".png", delete=False
+    ) as tmp_file:
         PIL_img.save(tmp_file, format="PNG")
         temp_file_path = tmp_file.name
 
@@ -49,7 +51,9 @@ def route_to_image(route: Route) -> str:
     """
     image = RouteImageFactory(route).image
 
-    with tempfile.NamedTemporaryFile(prefix="reagentai_route_", suffix=".png", delete=False) as tmp_file:
+    with tempfile.NamedTemporaryFile(
+        prefix="reagentai_route_", suffix=".png", delete=False
+    ) as tmp_file:
         image.save(tmp_file, format="PNG")
         temp_file_path = tmp_file.name
 
