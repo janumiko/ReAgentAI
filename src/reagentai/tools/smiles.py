@@ -5,6 +5,10 @@ from PIL import Image
 from rdkit import Chem
 from rdkit.Chem import Draw
 
+from src.reagentai.models.retrosynthesis import Route
+
+from .helpers import RouteImageFactory
+
 logger = logging.getLogger(__name__)
 
 
@@ -48,6 +52,27 @@ def image_from_smiles(smiles: str, size: tuple[int, int] = (300, 300)) -> str:
 
     with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp_file:
         PIL_img.save(tmp_file, format="PNG")
+        temp_file_path = tmp_file.name
+
+    return temp_file_path
+
+
+def route_to_image(routes: Route) -> str:
+    """
+    Generate an image from a SMILES route.
+
+    Args:
+        routes (RouteCollection): The collection of retrosynthesis routes.
+        idx (int): The index of the route to generate an image for. Default is 0.
+
+    Returns:
+        str: The file path to the generated image.
+    """
+    print("Generating image for route...")
+    image = RouteImageFactory(routes).image
+
+    with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp_file:
+        image.save(tmp_file, format="PNG")
         temp_file_path = tmp_file.name
 
     return temp_file_path
