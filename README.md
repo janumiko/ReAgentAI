@@ -55,7 +55,7 @@ sudo docker run -p 7860:7860 --env-file .env reagentai
 Access the application in your browser at: http://127.0.0.1:7860/
 ### MLflow
 ```shell
-uv run mlflow serwer
+uv run mlflow server
 ```
 ### MLflow in Docker container
 ```shell
