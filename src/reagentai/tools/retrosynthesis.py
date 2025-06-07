@@ -3,9 +3,9 @@ import logging
 from aizynthfinder.analysis.utils import RouteSelectionArguments
 from pydantic_ai import RunContext
 
+from src.reagentai.common.typing import HasAiZynthFinder
 from src.reagentai.common.utils.cache import RetrosynthesisCache
 from src.reagentai.common.utils.parse import parse_route_dict
-from src.reagentai.common.utils.typing import HasAiZynthFinder
 from src.reagentai.models.retrosynthesis import RouteCollection
 
 logger = logging.getLogger(__name__)
