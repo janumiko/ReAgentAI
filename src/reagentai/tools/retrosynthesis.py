@@ -112,7 +112,7 @@ def perform_retrosynthesis(
         raise ValueError(f"No retrosynthesis routes found for target: {target_smile}")
 
     # 4. Convert to RouteCollection
-    routes = [parse_route_dict(route) for route in routes]
+    routes = [parse_route_dict(route, idx) for idx, route in enumerate(routes)]
     route_collection = RouteCollection(routes=routes, n_routes=len(routes))
     logger.info(f"Found {len(route_collection)} retrosynthesis routes for {target_smile}.")
 

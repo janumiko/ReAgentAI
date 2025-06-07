@@ -48,7 +48,7 @@ class NodeBase(BaseModel):
         children (list[str]): List of IDs of child nodes (default is an empty list).
     """
 
-    id: str
+    node_id: str
     smiles: str
     children: list[str] = Field(default_factory=list)
 
@@ -81,13 +81,15 @@ class Route(BaseModel):
     Represents a retrosynthetic route consisting of molecular and reaction nodes.
 
     Attributes:
-        score_data (ScoreData): The scoring information associated with the route.
+        route_id (int): Unique identifier for the route.
         root_node_id (str): The identifier of the root node in the route.
+        score_data (ScoreData): The scoring information associated with the route.
         mols_nodes (list[MolNode]): List of molecular nodes in the route.
         reactions_nodes (list[ReactionNode]): List of reaction nodes in the route.
     """
-    score_data: ScoreData
+    route_id: int
     root_node_id: str
+    score_data: ScoreData
     mol_nodes: list[MolNode] = Field(default_factory=list)
     reaction_nodes: list[ReactionNode] = Field(default_factory=list)
 
