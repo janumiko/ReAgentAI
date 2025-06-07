@@ -16,4 +16,4 @@ def start_agent():
     main_agent = create_main_agent()
     app = create_gradio_app(main_agent)
 
-    app.launch(server_name="127.0.0.1")
+    app.launch(server_name="0.0.0.0")
