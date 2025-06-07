@@ -1,72 +1,14 @@
 import logging
-from typing import Protocol
 
-from aizynthfinder.aizynthfinder import AiZynthFinder
 from aizynthfinder.analysis.utils import RouteSelectionArguments
-from aizynthfinder.context.config import Configuration
 from pydantic_ai import RunContext
 
+from src.reagentai.common.typing import HasAiZynthFinder
+from src.reagentai.common.utils.cache import RetrosynthesisCache
+from src.reagentai.common.utils.parse import parse_route_dict
 from src.reagentai.models.retrosynthesis import RouteCollection
 
-from .helpers import parse_route_dict
-
 logger = logging.getLogger(__name__)
-
-
-class HasAiZynthFinder(Protocol):
-    """Protocol for any dependencies that include an AiZynthFinder instance."""
-
-    aizynth_finder: AiZynthFinder
-
-
-def initialize_aizynthfinder(
-    config_path: str, stock: str, expansion_policy: str, filter_policy: str
-) -> AiZynthFinder:
-    """
-    Initializes the AiZynthFinder instance with the given configuration.
-
-    Args:
-        config_path (str): Path to the configuration file for AiZynthFinder.
-        stock (str): Stock source to use (e.g., "zinc").
-        expansion_policy (str): Expansion policy to use (e.g., "uspto").
-        filter_policy (str): Filter policy to use (e.g., "uspto").
-
-    Returns:
-        AiZynthFinder: An initialized instance of AiZynthFinder.
-    """
-    config = Configuration.from_file(config_path)
-    finder = AiZynthFinder(
-        configfile=config_path,
-    )
-    finder.stock.select(stock)
-    finder.expansion_policy.select(expansion_policy)
-    finder.filter_policy.select(filter_policy)
-
-    if RetrosynthesisCache.finder_config is None:
-        RetrosynthesisCache.finder_config = config
-    elif RetrosynthesisCache.finder_config != config:
-        logger.warning("Configuration has changed since the last initialization. Clearing cache.")
-        RetrosynthesisCache.clear()
-        RetrosynthesisCache.finder_config = config
-
-    return finder
-
-
-class RetrosynthesisCache:
-    routes_cache: dict[str, RouteCollection] = {}
-    finder_config: Configuration | None = None
-
-    @classmethod
-    def add(cls, target_smile: str, data: RouteCollection):
-        cls.routes_cache[target_smile] = data
-
-    @classmethod
-    def get(cls, target_smile: str) -> RouteCollection | None:
-        return cls.routes_cache.get(target_smile)
-
-    @classmethod
-    def clear(cls):
-        cls.routes_cache.clear()
 
 
 def perform_retrosynthesis(
