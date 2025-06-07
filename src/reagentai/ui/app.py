@@ -3,12 +3,12 @@ import functools
 import gradio as gr
 
 from src.reagentai.common.client import LLMClient
-from src.reagentai.constants import AVAILABLE_LLM_MODELS
+from src.reagentai.constants import AVAILABLE_LLM_MODELS, EXAMPLE_PROMPTS
 
 
 # UI Creation Helper Functions
-def create_settings_panel():
-    with gr.Column(scale=1, min_width=250):
+def create_settings_panel(chat_input_component: gr.MultimodalTextbox):
+    with gr.Column(scale=1, min_width=200):
         gr.Markdown("### Model Settings")
         llm_model_dropdown = gr.Dropdown(
             label="Select LLM Model",
@@ -22,6 +22,14 @@ def create_settings_panel():
             interactive=False,
             visible=True,
         )
+
+        gr.Markdown("### Examples")
+        gr.Examples(
+            examples=EXAMPLE_PROMPTS,
+            inputs=chat_input_component,
+            show_label=False,
+        )
+
     return llm_model_dropdown, token_usage_display
 
 
@@ -102,8 +110,8 @@ def create_gradio_app(llm_client: LLMClient):
         )
 
         with gr.Row():
-            llm_model_dropdown, token_usage_display = create_settings_panel()
             chatbot_display, chat_input = create_chat_interface()
+            llm_model_dropdown, token_usage_display = create_settings_panel(chat_input)
 
         # Event handling
         chat_input.submit(
