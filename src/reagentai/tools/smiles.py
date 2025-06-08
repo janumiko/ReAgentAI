@@ -31,7 +31,7 @@ def is_valid_smiles(smiles: str, sanitize: bool = True) -> bool:
 
 
 def find_similar_molecules(
-        query_smiles: str, target_smiles_list: list[str] = SMILES_DEFAULT_LIST, top_n: int = 5
+    query_smiles: str, target_smiles_list: list[str] = SMILES_DEFAULT_LIST, top_n: int = 5
 ) -> list[tuple[str, float]]:
     """
     Finds molecules similar to a query SMILES string from a list of target SMILES strings
