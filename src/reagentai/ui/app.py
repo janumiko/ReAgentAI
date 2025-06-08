@@ -191,7 +191,7 @@ def run_agent(
         chat_history.append(
             {
                 "role": "assistant",
-                "content": f"An error occurred while processing your request:\n{e.message}.\nTry again later.",
+                "content": f"An error occurred while processing your request:\n{str(e)}.\nTry again later.",
             }
         )
 
