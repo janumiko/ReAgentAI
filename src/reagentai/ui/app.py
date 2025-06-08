@@ -94,13 +94,29 @@ def handle_clear_chat(main_agent: MainAgent) -> tuple[list, list, int]:
 
 def handle_model_change(model_name: str, main_agent: MainAgent) -> None:
     """
-    Sets the new LLM model in the client.
+    Sets the new LLM model for the main agent.
 
     Args:
         model_name (str): The name of the new LLM model to set.
         main_agent (MainAgent): The main agent instance to update with the new model.
     """
     main_agent.set_model(model_name)
+
+
+def handle_retry(chat_history: ChatHistory, retry_data: gr.RetryData) -> tuple[str, ChatHistory]:
+    """
+    Handles the retry action by restoring the previous prompt and chat history.
+
+    Args:
+        chat_history (ChatHistory): The current chat history.
+        retry_data (gr.RetryData): The retry data containing the index of the last message.
+        main_agent (MainAgent): The main agent instance to use for retrying.
+    Returns:
+        tuple: A tuple containing the previous prompt and the updated chat history.
+    """
+    new_history = chat_history[: retry_data.index]
+    previous_prompt = chat_history[retry_data.index]["content"]
+    return previous_prompt, new_history
 
 
 async def stream_from_agent(
@@ -226,6 +242,13 @@ def create_gradio_app(main_agent: MainAgent) -> gr.Blocks:
             inputs=[chat_input, chatbot_display, tool_display],
             outputs=[chat_input, chatbot_display, tool_display, usage_counter],
         )
+
+        chatbot_display.retry(
+            fn=handle_retry,
+            inputs=[chatbot_display],
+            outputs=[chat_input, chatbot_display],
+            api_name="retry_last_query",
+        ).then(fn=main_agent.remove_last_messages)
 
         chatbot_display.clear(
             fn=functools.partial(
