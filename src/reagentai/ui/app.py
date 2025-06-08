@@ -119,7 +119,9 @@ def handle_retry(chat_history: ChatHistory, retry_data: gr.RetryData) -> tuple[s
     return previous_prompt, new_history
 
 
-def handle_user_prompt(user_prompt: str, chat_history: ChatHistory) -> tuple[gr.Textbox, ChatHistory]:
+def handle_user_prompt(
+    user_prompt: str, chat_history: ChatHistory
+) -> tuple[gr.Textbox, ChatHistory]:
     """
     Handles the user's prompt by appending it to the chat history.
 
