@@ -1,7 +1,7 @@
 import functools
 
 import gradio as gr
-from pydantic_ai import UnexpectedModelBehavior, UsageLimitExceeded
+from pydantic_ai import UnexpectedModelBehavior, UsageLimitExceeded, ModelHTTPError
 from pydantic_ai.messages import ToolCallPart, ToolReturnPart
 
 from src.reagentai.agents.main.main_agent import MainAgent
@@ -195,6 +195,13 @@ def run_agent(
             {
                 "role": "assistant",
                 "content": f"An error occurred while processing your request:\n{str(e)}.\nTry again later.",
+            }
+        )
+    except ModelHTTPError as e:
+        chat_history.append(
+            {
+                "role": "assistant",
+                "content": f"An error occurred while communicating with the model provider.\nPlease try again later.\nStatus Code: {e.status_code}, Error: {str(e.message)}",
             }
         )
 
