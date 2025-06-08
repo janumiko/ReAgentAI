@@ -89,8 +89,8 @@ class MainAgent:
         Args:
             remove_user_prompt (bool): If True, removes the last user prompt as well.
         """
-        while self.message_history and not isinstance(
-            self.message_history[-1].parts, UserPromptPart
+        while self.message_history and not any(
+            isinstance(part, UserPromptPart) for part in self.message_history[-1].parts
         ):
             self.message_history.pop()
 
