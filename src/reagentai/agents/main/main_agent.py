@@ -155,6 +155,29 @@ class MainAgent:
             self.message_history = result.all_messages()
             self.usage = result.usage()
 
+    def run(self, user_query: str) -> AgentRunResult:
+        """
+        Runs the agent with the given user query and returns the result.
+
+        Args:
+            user_query (str): The user's query to the agent.
+
+        Returns:
+            result.FinalResult: The final result of the agent's run, including all messages and usage statistics.
+        """
+        if not user_query:
+            logger.warning("Empty user query received.")
+
+        result: AgentRunResult = self._agent.run_sync(
+            user_query,
+            message_history=self.message_history,
+            deps=self.dependencies,
+        )
+
+        self.message_history = result.all_messages()
+        self.usage = result.usage()
+
+        return result
 
 def create_main_agent() -> MainAgent:
     """

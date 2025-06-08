@@ -9,7 +9,7 @@ from src.reagentai.ui.app import create_gradio_app
 logger = logging.getLogger(__name__)
 
 
-async def start_agent():
+def start_agent():
     setup_logging()
     load_dotenv()
 

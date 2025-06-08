@@ -1,7 +1,8 @@
-from collections.abc import AsyncIterator
+from collections.abc import Generator
 import functools
 
 import gradio as gr
+from pydantic_ai import UnexpectedModelBehavior, UsageLimitExceeded
 from pydantic_ai.messages import ToolCallPart, ToolReturnPart
 
 from src.reagentai.agents.main.main_agent import MainAgent
@@ -119,11 +120,14 @@ def handle_retry(chat_history: ChatHistory, retry_data: gr.RetryData) -> tuple[s
     return previous_prompt, new_history
 
 
-async def stream_from_agent(
-    prompt: str, chat_history: ChatHistory, tool_history: ChatHistory, main_agent: MainAgent
-) -> AsyncIterator[tuple[gr.Component, ChatHistory, ChatHistory, int]]:
+def run_agent(
+    prompt: str,
+    chat_history: ChatHistory,
+    tool_history: ChatHistory,
+    main_agent: MainAgent,
+) -> Generator[tuple[gr.Textbox, ChatHistory, ChatHistory, int], None, None]:
     """
-    Streams the response from the main agent asynchronously and updates the chat history.
+    Runs the main agent with the provided prompt and updates the chat history and tool usage history.
 
     Args:
         prompt (str): The user's query to the agent.
@@ -131,7 +135,7 @@ async def stream_from_agent(
         tool_history (ChatHistory): The current tool usage history.
         main_agent (MainAgent): The main agent instance to use for streaming.
     Yields:
-        AsyncGenerator: An asynchronous generator yielding updated components and chat histories.
+        Generator: A generator yielding tuples containing the updated chat input, chat history, tool history, and token usage.
     """
     # Update chat history with the user's prompt
     chat_history.append({"role": "user", "content": prompt})
@@ -142,10 +146,11 @@ async def stream_from_agent(
         gr.skip(),
     )  # Disable input while processing
 
-    generated_images: list[dict] = []
+    try:
+        result = main_agent.run(prompt)
+        # Append the assistant's response to chat history
+        chat_history.append({"role": "assistant", "content": result.output})
 
-    async with main_agent.run_stream(prompt) as result:
-        # Stream tool calls and returns
         for message in result.new_messages():
             for call in message.parts:
                 # Handle tool call parts
@@ -178,24 +183,22 @@ async def stream_from_agent(
                             "content": {"path": output.file_path},
                             "metadata": metadata,
                         }
-                        generated_images.append(gr_message)
+                        chat_history.append(gr_message)
 
-            yield gr.skip(), gr.skip(), tool_history, gr.skip()
+            yield gr.skip(), chat_history, tool_history, gr.skip()
 
-        # Append the assistant's response to chat history
-        chat_history.append({"role": "assistant", "content": ""})
-        async for message in result.stream_text():
-            chat_history[-1]["content"] = message
-            yield gr.skip(), chat_history, gr.skip(), gr.skip()
-
-        # Append images to chat history
-        chat_history.extend(generated_images)
-        yield gr.skip(), chat_history, gr.skip(), gr.skip()
+    except (UnexpectedModelBehavior, UsageLimitExceeded) as e:
+        chat_history.append(
+            {
+                "role": "assistant",
+                "content": f"An error occurred while processing your request:\n{e.message}.\nTry again later.",
+            }
+        )
 
     total_tokens = main_agent.get_total_token_usage()
     yield (
         gr.Textbox(interactive=True),
-        gr.skip(),
+        chat_history,
         gr.skip(),
         total_tokens,
     )  # Re-enable input after streaming
@@ -236,7 +239,7 @@ def create_gradio_app(main_agent: MainAgent) -> gr.Blocks:
         # Event handling
         chat_input.submit(
             functools.partial(
-                stream_from_agent,
+                run_agent,
                 main_agent=main_agent,
             ),
             inputs=[chat_input, chatbot_display, tool_display],
