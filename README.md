@@ -57,18 +57,18 @@ Access the application in your browser at: http://127.0.0.1:7860/
 ```shell
 uv run mlflow server
 ```
-### MLflow in Docker container
+### MLflow in a Docker container
 ```shell
 sudo docker network create mlflow-network
 ```
 ```shell
 sudo docker build -f Dockerfile.mlflow -t mlflow-server .
 ```
-To run just mlflow-serwer:
+To run just mlflow-server:
 ```shell
 sudo docker run --rm -p 5000:5000 mlflow-server
 ```
-To run both MLflow serwer and ReAgentAI:
+To run both MLflow server and ReAgentAI:
 ```shell
 sudo docker compose up
 ```
