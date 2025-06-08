@@ -9,7 +9,17 @@ dependencies = [
     "pydantic-ai>=0.2.4",
     "python-dotenv>=1.1.0",
     "gradio>=5.29.1",
+    "mlflow>=2.22.1",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.5",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
 
 [tool.black]
 target-version = ["py310", "py311"]
