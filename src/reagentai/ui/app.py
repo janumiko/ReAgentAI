@@ -1,4 +1,3 @@
-from collections.abc import Generator
 import functools
 
 import gradio as gr
@@ -120,12 +119,26 @@ def handle_retry(chat_history: ChatHistory, retry_data: gr.RetryData) -> tuple[s
     return previous_prompt, new_history
 
 
+def handle_user_prompt(user_prompt: str, chat_history: ChatHistory) -> tuple[gr.Textbox, ChatHistory]:
+    """
+    Handles the user's prompt by appending it to the chat history.
+
+    Args:
+        user_prompt (str): The user's input prompt.
+        chat_history (ChatHistory): The current chat history.
+    Returns:
+        tuple: A tuple containing the updated chat input component and chat history.
+    """
+    chat_history.append({"role": "user", "content": user_prompt})
+    return gr.Textbox(interactive=False), chat_history
+
+
 def run_agent(
     prompt: str,
     chat_history: ChatHistory,
     tool_history: ChatHistory,
     main_agent: MainAgent,
-) -> Generator[tuple[gr.Textbox, ChatHistory, ChatHistory, int], None, None]:
+) -> tuple[gr.Textbox, ChatHistory, ChatHistory, int]:
     """
     Runs the main agent with the provided prompt and updates the chat history and tool usage history.
 
@@ -134,18 +147,9 @@ def run_agent(
         chat_history (ChatHistory): The current chat history.
         tool_history (ChatHistory): The current tool usage history.
         main_agent (MainAgent): The main agent instance to use for streaming.
-    Yields:
-        Generator: A generator yielding tuples containing the updated chat input, chat history, tool history, and token usage.
+    Returns:
+        tuple: A tuple containing the updated chat input component, chat history, tool history, and total token usage.
     """
-    # Update chat history with the user's prompt
-    chat_history.append({"role": "user", "content": prompt})
-    yield (
-        gr.Textbox(value=None, interactive=False),
-        chat_history,
-        gr.skip(),
-        gr.skip(),
-    )  # Disable input while processing
-
     try:
         result = main_agent.run(prompt)
         # Append the assistant's response to chat history
@@ -185,8 +189,6 @@ def run_agent(
                         }
                         chat_history.append(gr_message)
 
-            yield gr.skip(), chat_history, tool_history, gr.skip()
-
     except (UnexpectedModelBehavior, UsageLimitExceeded) as e:
         chat_history.append(
             {
@@ -196,10 +198,10 @@ def run_agent(
         )
 
     total_tokens = main_agent.get_total_token_usage()
-    yield (
-        gr.Textbox(interactive=True),
+    return (
+        gr.Textbox(value=None, interactive=True),
         chat_history,
-        gr.skip(),
+        tool_history,
         total_tokens,
     )  # Re-enable input after streaming
 
@@ -238,6 +240,10 @@ def create_gradio_app(main_agent: MainAgent) -> gr.Blocks:
 
         # Event handling
         chat_input.submit(
+            fn=handle_user_prompt,
+            inputs=[chat_input, chatbot_display],
+            outputs=[chat_input, chatbot_display],
+        ).then(
             functools.partial(
                 run_agent,
                 main_agent=main_agent,
