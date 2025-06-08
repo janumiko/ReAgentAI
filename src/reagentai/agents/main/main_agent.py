@@ -11,7 +11,7 @@ from src.reagentai.common.aizynthfinder import initialize_aizynthfinder
 from src.reagentai.constants import AIZYNTHFINDER_CONFIG_PATH
 from src.reagentai.tools.image import route_to_image, smiles_to_image
 from src.reagentai.tools.retrosynthesis import perform_retrosynthesis
-from src.reagentai.tools.smiles import is_valid_smiles
+from src.reagentai.tools.smiles import find_similar_molecules, is_valid_smiles
 
 logger = logging.getLogger(__name__)
 
@@ -156,6 +156,7 @@ def create_main_agent() -> MainAgent:
         Tool(is_valid_smiles),
         Tool(smiles_to_image),
         Tool(route_to_image),
+        Tool(find_similar_molecules),
         duckduckgo_search_tool(),
     ]
 
