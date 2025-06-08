@@ -74,7 +74,7 @@ def add_user_message_to_history(
 
 
 def handle_bot_response(
-    chat_history: ChatHistory, llm_client: MainAgent
+    chat_history: ChatHistory, llm_client: MainAgent, mlflow_tracker=None
 ) -> tuple[ChatHistory, int]:
     """
     Gets LLM response, updates chat history and token usage.
@@ -83,6 +83,20 @@ def handle_bot_response(
     response: list[ChatMessage] = llm_client.respond(user_query)
     chat_history.extend(response)
     token_used: int = llm_client.get_token_usage()
+
+    # Log metrics to MLflow
+    if mlflow_tracker and mlflow_tracker.mlflow_enabled:
+        mlflow_tracker.log_metrics(
+            {"token_usage": token_used, "conversation_length": len(chat_history)}
+        )
+
+        # Log user query as param for tracking purposes
+        mlflow_tracker.log_params(
+            {
+                f"query_{len(chat_history)}": user_query[:100]  # Truncate long queries
+            }
+        )
+
     return chat_history, token_used
 
 
@@ -96,11 +110,16 @@ def handle_clear_chat(llm_client: MainAgent) -> tuple[list[None], Literal[0]]:
     return [], 0
 
 
-def handle_model_change(model_name: str, llm_client: MainAgent) -> None:
+def handle_model_change(model_name: str, llm_client: MainAgent, mlflow_tracker=None) -> None:
     """
     Sets the new LLM model in the client.
     """
     llm_client.set_model(model_name)
+
+    # Log model change to MLflow
+    if mlflow_tracker and mlflow_tracker.mlflow_enabled:
+        mlflow_tracker.log_params({"llm_model": model_name})
+        mlflow_tracker.set_tags({"model_changed": "true"})
 
 
 def re_enable_chat_input() -> gr.MultimodalTextbox:
@@ -111,7 +130,7 @@ def re_enable_chat_input() -> gr.MultimodalTextbox:
 
 
 # Main App Creation Function
-def create_gradio_app(llm_client: MainAgent) -> gr.Blocks:
+def create_gradio_app(llm_client: MainAgent, mlflow_tracker=None) -> gr.Blocks:
     with gr.Blocks(
         theme=gr.themes.Origin(),
     ) as demo:
@@ -131,7 +150,9 @@ def create_gradio_app(llm_client: MainAgent) -> gr.Blocks:
             inputs=[chatbot_display, chat_input],
             outputs=[chatbot_display, chat_input],
         ).then(
-            fn=functools.partial(handle_bot_response, llm_client=llm_client),
+            fn=functools.partial(
+                handle_bot_response, llm_client=llm_client, mlflow_tracker=mlflow_tracker
+            ),
             inputs=chatbot_display,
             outputs=[chatbot_display, token_usage_display],
             api_name="bot_response",
@@ -145,7 +166,9 @@ def create_gradio_app(llm_client: MainAgent) -> gr.Blocks:
         )
 
         llm_model_dropdown.change(
-            fn=functools.partial(handle_model_change, llm_client=llm_client),
+            fn=functools.partial(
+                handle_model_change, llm_client=llm_client, mlflow_tracker=mlflow_tracker
+            ),
             inputs=llm_model_dropdown,
             outputs=[],
         )

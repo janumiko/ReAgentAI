@@ -1,0 +1,10 @@
+FROM python:3.11-slim
+
+# Install MLflow and downgrade protobuf to a compatible version
+RUN pip install mlflow==2.19.0 protobuf==3.20.1
+
+# Expose the port for MLflow UI
+EXPOSE 5000
+
+# Command to run the MLflow server
+CMD ["mlflow", "server", "--host", "0.0.0.0", "--port", "5000"]
