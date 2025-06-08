@@ -5,6 +5,7 @@ import logging
 
 from aizynthfinder.aizynthfinder import AiZynthFinder
 from pydantic_ai import Agent, Tool, result
+from pydantic_ai.messages import UserPromptPart
 
 from src.reagentai.common.aizynthfinder import initialize_aizynthfinder
 from src.reagentai.constants import AIZYNTHFINDER_CONFIG_PATH
@@ -79,6 +80,22 @@ class MainAgent:
             deps_type=self.dependency_types,
             output_type=self.output_type,
         )
+
+    def remove_last_messages(self, remove_user_prompt: bool = True):
+        """
+        Removes the last messages from the agent's message history.
+        Args:
+            remove_user_prompt (bool): If True, removes the last user prompt as well.
+        """
+        while self.message_history and not isinstance(
+            self.message_history[-1].parts, UserPromptPart
+        ):
+            self.message_history.pop()
+
+        if remove_user_prompt and self.message_history:
+            self.message_history.pop()
+
+        logger.info("MainAgent last messages removed from history.")
 
     def set_model(self, model_name: str):
         """
