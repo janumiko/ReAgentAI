@@ -5,7 +5,9 @@ import logging
 
 from aizynthfinder.aizynthfinder import AiZynthFinder
 from pydantic_ai import Agent, Tool, result
+from pydantic_ai.agent import AgentRunResult
 from pydantic_ai.common_tools.duckduckgo import duckduckgo_search_tool
+from pydantic_ai.messages import UserPromptPart
 
 from src.reagentai.common.aizynthfinder import initialize_aizynthfinder
 from src.reagentai.constants import AIZYNTHFINDER_CONFIG_PATH
@@ -81,6 +83,22 @@ class MainAgent:
             output_type=self.output_type,
         )
 
+    def remove_last_messages(self, remove_user_prompt: bool = True):
+        """
+        Removes the last messages from the agent's message history.
+        Args:
+            remove_user_prompt (bool): If True, removes the last user prompt as well.
+        """
+        while self.message_history and not any(
+            isinstance(part, UserPromptPart) for part in self.message_history[-1].parts
+        ):
+            self.message_history.pop()
+
+        if remove_user_prompt and self.message_history:
+            self.message_history.pop()
+
+        logger.info("MainAgent last messages removed from history.")
+
     def set_model(self, model_name: str):
         """
         Sets the model for the Agent.
@@ -137,6 +155,30 @@ class MainAgent:
 
             self.message_history = result.all_messages()
             self.usage = result.usage()
+
+    def run(self, user_query: str) -> AgentRunResult:
+        """
+        Runs the agent with the given user query and returns the result.
+
+        Args:
+            user_query (str): The user's query to the agent.
+
+        Returns:
+            AgentRunResult: The result of the agent's run, including the output and message history.
+        """
+        if not user_query:
+            logger.warning("Empty user query received.")
+
+        result: AgentRunResult = self._agent.run_sync(
+            user_query,
+            message_history=self.message_history,
+            deps=self.dependencies,
+        )
+
+        self.message_history = result.all_messages()
+        self.usage = result.usage()
+
+        return result
 
 
 def create_main_agent() -> MainAgent:

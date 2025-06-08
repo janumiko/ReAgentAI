@@ -1,7 +1,7 @@
-from collections.abc import AsyncIterator
 import functools
 
 import gradio as gr
+from pydantic_ai import UnexpectedModelBehavior, UsageLimitExceeded
 from pydantic_ai.messages import ToolCallPart, ToolReturnPart
 
 from src.reagentai.agents.main.main_agent import MainAgent
@@ -94,7 +94,7 @@ def handle_clear_chat(main_agent: MainAgent) -> tuple[list, list, int]:
 
 def handle_model_change(model_name: str, main_agent: MainAgent) -> None:
     """
-    Sets the new LLM model in the client.
+    Sets the new LLM model for the main agent.
 
     Args:
         model_name (str): The name of the new LLM model to set.
@@ -103,33 +103,59 @@ def handle_model_change(model_name: str, main_agent: MainAgent) -> None:
     main_agent.set_model(model_name)
 
 
-async def stream_from_agent(
-    prompt: str, chat_history: ChatHistory, tool_history: ChatHistory, main_agent: MainAgent
-) -> AsyncIterator[tuple[gr.Component, ChatHistory, ChatHistory, int]]:
+def handle_retry(chat_history: ChatHistory, retry_data: gr.RetryData) -> tuple[str, ChatHistory]:
     """
-    Streams the response from the main agent asynchronously and updates the chat history.
+    Handles the retry action by restoring the previous prompt and chat history.
+
+    Args:
+        chat_history (ChatHistory): The current chat history.
+        retry_data (gr.RetryData): The retry data containing the index of the last message.
+    Returns:
+        tuple: A tuple containing the previous prompt and the updated chat history.
+    """
+    new_history = chat_history[: retry_data.index]
+    previous_prompt = chat_history[retry_data.index]["content"]
+    return previous_prompt, new_history
+
+
+def handle_user_prompt(
+    user_prompt: str, chat_history: ChatHistory
+) -> tuple[gr.Textbox, ChatHistory]:
+    """
+    Handles the user's prompt by appending it to the chat history.
+
+    Args:
+        user_prompt (str): The user's input prompt.
+        chat_history (ChatHistory): The current chat history.
+    Returns:
+        tuple: A tuple containing the updated chat input component and chat history.
+    """
+    chat_history.append({"role": "user", "content": user_prompt})
+    return gr.Textbox(interactive=False), chat_history
+
+
+def run_agent(
+    prompt: str,
+    chat_history: ChatHistory,
+    tool_history: ChatHistory,
+    main_agent: MainAgent,
+) -> tuple[gr.Textbox, ChatHistory, ChatHistory, int]:
+    """
+    Runs the main agent with the provided prompt and updates the chat history and tool usage history.
 
     Args:
         prompt (str): The user's query to the agent.
         chat_history (ChatHistory): The current chat history.
         tool_history (ChatHistory): The current tool usage history.
         main_agent (MainAgent): The main agent instance to use for streaming.
-    Yields:
-        AsyncGenerator: An asynchronous generator yielding updated components and chat histories.
+    Returns:
+        tuple: A tuple containing the updated chat input component, chat history, tool history, and total token usage.
     """
-    # Update chat history with the user's prompt
-    chat_history.append({"role": "user", "content": prompt})
-    yield (
-        gr.Textbox(value=None, interactive=False),
-        chat_history,
-        gr.skip(),
-        gr.skip(),
-    )  # Disable input while processing
+    try:
+        result = main_agent.run(prompt)
+        # Append the assistant's response to chat history
+        chat_history.append({"role": "assistant", "content": result.output})
 
-    generated_images: list[dict] = []
-
-    async with main_agent.run_stream(prompt) as result:
-        # Stream tool calls and returns
         for message in result.new_messages():
             for call in message.parts:
                 # Handle tool call parts
@@ -162,25 +188,21 @@ async def stream_from_agent(
                             "content": {"path": output.file_path},
                             "metadata": metadata,
                         }
-                        generated_images.append(gr_message)
+                        chat_history.append(gr_message)
 
-            yield gr.skip(), gr.skip(), tool_history, gr.skip()
-
-        # Append the assistant's response to chat history
-        chat_history.append({"role": "assistant", "content": ""})
-        async for message in result.stream_text():
-            chat_history[-1]["content"] = message
-            yield gr.skip(), chat_history, gr.skip(), gr.skip()
-
-        # Append images to chat history
-        chat_history.extend(generated_images)
-        yield gr.skip(), chat_history, gr.skip(), gr.skip()
+    except (UnexpectedModelBehavior, UsageLimitExceeded) as e:
+        chat_history.append(
+            {
+                "role": "assistant",
+                "content": f"An error occurred while processing your request:\n{str(e)}.\nTry again later.",
+            }
+        )
 
     total_tokens = main_agent.get_total_token_usage()
-    yield (
-        gr.Textbox(interactive=True),
-        gr.skip(),
-        gr.skip(),
+    return (
+        gr.Textbox(value=None, interactive=True),
+        chat_history,
+        tool_history,
         total_tokens,
     )  # Re-enable input after streaming
 
@@ -219,13 +241,24 @@ def create_gradio_app(main_agent: MainAgent) -> gr.Blocks:
 
         # Event handling
         chat_input.submit(
+            fn=handle_user_prompt,
+            inputs=[chat_input, chatbot_display],
+            outputs=[chat_input, chatbot_display],
+        ).then(
             functools.partial(
-                stream_from_agent,
+                run_agent,
                 main_agent=main_agent,
             ),
             inputs=[chat_input, chatbot_display, tool_display],
             outputs=[chat_input, chatbot_display, tool_display, usage_counter],
         )
+
+        chatbot_display.retry(
+            fn=handle_retry,
+            inputs=[chatbot_display],
+            outputs=[chat_input, chatbot_display],
+            api_name="retry_last_query",
+        ).then(fn=main_agent.remove_last_messages)
 
         chatbot_display.clear(
             fn=functools.partial(
