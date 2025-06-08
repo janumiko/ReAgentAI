@@ -6,7 +6,7 @@ from pydantic_ai.messages import ToolCallPart, ToolReturnPart
 
 from src.reagentai.agents.main.main_agent import MainAgent
 from src.reagentai.common.typing import ChatHistory
-from src.reagentai.constants import AVAILABLE_LLM_MODELS, EXAMPLE_PROMPTS
+from src.reagentai.constants import APP_CSS, AVAILABLE_LLM_MODELS, EXAMPLE_PROMPTS
 from src.reagentai.models.output import ImageOutput
 
 
@@ -198,21 +198,22 @@ def create_gradio_app(main_agent: MainAgent) -> gr.Blocks:
     with gr.Blocks(
         theme=gr.themes.Origin(),
         fill_height=True,
-        css="""
-        .contain { display: flex !important; flex-direction: column !important; }
-        #component-0, #component-3, #component-10, #component-8  { height: 100% !important; }
-        #chatbot_display { flex-grow: 1 !important; overflow: auto !important;}
-        #tool_display { flex-grow: 1 !important; overflow: auto !important;}
-        #col { height: calc(100vh - 112px - 16px) !important; }
-        """,
+        css=APP_CSS,
     ) as demo:
         # Main app layout
-        gr.Markdown(
-            """
-            # ReagentAI - Retrosynthesis Assistant
-            """
-        )
-        with gr.Row(equal_height=False):
+        with gr.Row():
+            with gr.Column(scale=1):
+                gr.Image(
+                    value="static/logo_reagent.png",
+                    show_label=False,
+                    show_download_button=False,
+                    show_fullscreen_button=False,
+                    interactive=False,
+                    container=False,
+                    elem_id="logo_container",
+                )
+
+        with gr.Row():
             chatbot_display, chat_input = create_chat_interface()
             llm_model_dropdown, usage_counter, tool_display = create_settings_panel(chat_input)
 

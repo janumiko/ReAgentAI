@@ -16,3 +16,16 @@ EXAMPLE_PROMPTS = [
 DEFAULT_LOG_LEVEL: int = INFO
 LOG_DIR: Path = Path("logs")
 LOG_TO_FILE: bool = True
+
+APP_CSS: str = """
+    .contain { display: flex !important; flex-direction: column !important; }
+    #chatbot_display { flex-grow: 1 !important; overflow: auto !important;}
+    #tool_display { flex-grow: 1 !important; overflow: auto !important;}
+    #col { height: calc(95vh - 112px - 16px) !important; }
+    #logo_container {
+        height: 5vh !important;
+        display: flex;
+        justify-content: left;
+        align-items: center;
+    }
+"""
