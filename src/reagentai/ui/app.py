@@ -85,7 +85,7 @@ def handle_clear_chat(main_agent: MainAgent) -> tuple[list, list, int]:
     Args:
         main_agent (MainAgent): The main agent instance to clear history from.
     Returns:
-        tuple: A tuple containing an empty list for chat history, an empty list for tool history, and 0 for token usage.
+        tuple: A tuple containing empty lists for chat history and tool history, and 0 for token usage.
     """
 
     main_agent.clear_history()
