@@ -1,17 +1,15 @@
 from dataclasses import dataclass
 import logging
 
-from aizynthfinder.aizynthfinder import AiZynthFinder
 from pydantic_ai import Agent, Tool
 
-from src.reagentai.common.aizynthfinder import initialize_aizynthfinder
-from src.reagentai.constants import AIZYNTHFINDER_CONFIG_PATH
+from src.reagentai.agents.retrosynth_agent.retrosynth_agent import (
+    RetrosynthAgent,
+    create_retrosynth_agent,
+    delegate_to_retroagent,
+)
 from src.reagentai.models.llm_output import MultipleOutputs
 from src.reagentai.tools.image import route_to_image, smiles_to_image
-from src.reagentai.tools.retrosynthesis import (
-    perform_retrosynthesis,
-)
-from src.reagentai.tools.smiles import is_valid_smiles
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +23,7 @@ class MainAgentDependencyTypes:
     Defines the dependencies required by the main agent.
     """
 
-    aizynth_finder: AiZynthFinder
+    retrosynth_agent: RetrosynthAgent
 
 
 class MainAgent:
@@ -152,18 +150,12 @@ def create_main_agent() -> MainAgent:
         instructions = instructions_file.read()
 
     tools = [
-        Tool(perform_retrosynthesis, takes_ctx=True),
-        Tool(is_valid_smiles),
+        Tool(delegate_to_retroagent, takes_ctx=True),
         Tool(smiles_to_image),
         Tool(route_to_image),
     ]
 
-    aizynth_finder = initialize_aizynthfinder(
-        config_path=AIZYNTHFINDER_CONFIG_PATH,
-        stock="zinc",
-        expansion_policy="uspto",
-        filter_policy="uspto",
-    )
+    retrosynth_agent = create_retrosynth_agent()
 
     # Initialize the MainAgent client
     main_agent = MainAgent(
@@ -171,7 +163,7 @@ def create_main_agent() -> MainAgent:
         tools=tools,
         instructions=instructions,
         dependency_types=MainAgentDependencyTypes,
-        dependencies=MainAgentDependencyTypes(aizynth_finder=aizynth_finder),
+        dependencies=MainAgentDependencyTypes(retrosynth_agent=retrosynth_agent),
         output_type=MultipleOutputs,
     )
 
