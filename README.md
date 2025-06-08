@@ -1,4 +1,4 @@
-# ReAgentAI
+<img src="static/logo_reagent.png" width="200">
 
 ## Setup
 Supported Python versions: 3.10 and 3.11.
