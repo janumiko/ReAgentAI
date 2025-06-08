@@ -5,6 +5,7 @@ import logging
 
 from aizynthfinder.aizynthfinder import AiZynthFinder
 from pydantic_ai import Agent, Tool, result
+from pydantic_ai.common_tools.duckduckgo import duckduckgo_search_tool
 from pydantic_ai.messages import UserPromptPart
 
 from src.reagentai.common.aizynthfinder import initialize_aizynthfinder
@@ -172,6 +173,7 @@ def create_main_agent() -> MainAgent:
         Tool(is_valid_smiles),
         Tool(smiles_to_image),
         Tool(route_to_image),
+        duckduckgo_search_tool(),
     ]
 
     aizynth_finder = initialize_aizynthfinder(
