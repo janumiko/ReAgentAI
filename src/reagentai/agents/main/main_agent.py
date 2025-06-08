@@ -164,7 +164,7 @@ class MainAgent:
             user_query (str): The user's query to the agent.
 
         Returns:
-            result.FinalResult: The final result of the agent's run, including all messages and usage statistics.
+            AgentRunResult: The result of the agent's run, including the output and message history.
         """
         if not user_query:
             logger.warning("Empty user query received.")

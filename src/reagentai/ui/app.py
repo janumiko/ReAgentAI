@@ -110,7 +110,6 @@ def handle_retry(chat_history: ChatHistory, retry_data: gr.RetryData) -> tuple[s
     Args:
         chat_history (ChatHistory): The current chat history.
         retry_data (gr.RetryData): The retry data containing the index of the last message.
-        main_agent (MainAgent): The main agent instance to use for retrying.
     Returns:
         tuple: A tuple containing the previous prompt and the updated chat history.
     """
