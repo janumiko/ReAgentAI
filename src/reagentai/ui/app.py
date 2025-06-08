@@ -54,7 +54,7 @@ def create_settings_panel(
     return model_dropdown, usage_counter, tool_display
 
 
-def create_chat_interface() -> tuple[gr.Chatbot, gr.MultimodalTextbox]:
+def create_chat_interface() -> tuple[gr.Chatbot, gr.Textbox]:
     """
     Creates the chat interface with a chatbot display and input textbox.
 
@@ -103,25 +103,6 @@ def handle_model_change(model_name: str, main_agent: MainAgent) -> None:
     main_agent.set_model(model_name)
 
 
-def handle_user_input(
-    prompt: str, chat_history: ChatHistory
-) -> tuple[gr.MultimodalTextbox, ChatHistory]:
-    """
-    Handles user input by appending the prompt to chat history and disabling input while processing.
-
-    Args:
-        prompt (str): The user's query to the agent.
-        chat_history (ChatHistory): The current chat history.
-    Returns:
-        tuple: A tuple containing the chat input component (disabled) and updated chat history.
-    """
-    chat_history.append({"role": "user", "content": prompt})
-    return (
-        gr.MultimodalTextbox(value=None, interactive=False),
-        chat_history,
-    )  # Disable input while processing
-
-
 async def stream_from_agent(
     prompt: str, chat_history: ChatHistory, tool_history: ChatHistory, main_agent: MainAgent
 ) -> AsyncIterator[tuple[gr.Component, ChatHistory, ChatHistory, int]]:
@@ -136,6 +117,15 @@ async def stream_from_agent(
     Yields:
         AsyncGenerator: An asynchronous generator yielding updated components and chat histories.
     """
+    # Update chat history with the user's prompt
+    chat_history.append({"role": "user", "content": prompt})
+    yield (
+        gr.Textbox(value=None, interactive=False),
+        chat_history,
+        gr.skip(),
+        gr.skip(),
+    )  # Disable input while processing
+
     generated_images: list[dict] = []
 
     async with main_agent.run_stream(prompt) as result:
@@ -187,7 +177,7 @@ async def stream_from_agent(
         yield gr.skip(), chat_history, gr.skip(), gr.skip()
 
     yield (
-        gr.MultimodalTextbox(interactive=True),
+        gr.Textbox(interactive=True),
         gr.skip(),
         gr.skip(),
         0,
@@ -225,10 +215,6 @@ def create_gradio_app(main_agent: MainAgent) -> gr.Blocks:
 
         # Event handling
         chat_input.submit(
-            fn=handle_user_input,
-            inputs=[chat_input, chatbot_display],
-            outputs=[chat_input, chatbot_display],
-        ).then(
             functools.partial(
                 stream_from_agent,
                 main_agent=main_agent,
