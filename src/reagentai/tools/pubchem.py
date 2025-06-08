@@ -88,7 +88,7 @@ def get_smiles_from_name(compound_name: str) -> str:
         raise ValueError(f"Failed to retrieve SMILES for '{compound_name}': {str(e)}") from e
 
 
-def get_compound_info(compound_name: str) -> dict[str, str | None]:
+def get_compound_info(compound_name: str) -> dict[str, str | list | None]:
     """
     Retrieve comprehensive information about a chemical compound from PubChem.
 
