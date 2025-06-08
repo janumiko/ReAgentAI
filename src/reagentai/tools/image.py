@@ -6,21 +6,27 @@ from rdkit import Chem
 from rdkit.Chem import Draw
 
 from src.reagentai.common.utils.image import RouteImageFactory
+from src.reagentai.models.output import ImageOutput
 from src.reagentai.models.retrosynthesis import Route
 
 logger = logging.getLogger(__name__)
 
 
-def smiles_to_image(smiles: str, size: tuple[int, int] = (600, 300)) -> str:
+def smiles_to_image(
+    smiles: str, image_description: str, size: tuple[int, int] = (600, 300)
+) -> ImageOutput:
     """
     Generate an image from a SMILES string.
 
     Args:
         smiles (str): The SMILES string to convert to an image.
+        image_description (str): A description or title for the generated image.
         size (tuple[int, int]): The size of the image in pixels. Default is (600, 300).
 
     Returns:
-        str: The file path to the generated image.
+        ImageOutput: An object containing the file path to the generated image and its description.
+    Raises:
+        ValueError: If the provided SMILES string is invalid.
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
@@ -35,18 +41,19 @@ def smiles_to_image(smiles: str, size: tuple[int, int] = (600, 300)) -> str:
         temp_file_path = tmp_file.name
 
     logger.info(f"Generated image for SMILES: {smiles}, saved to {temp_file_path}")
-    return temp_file_path
+    return ImageOutput(file_path=temp_file_path, description=image_description)
 
 
-def route_to_image(route: Route) -> str:
+def route_to_image(route: Route, image_description: str) -> ImageOutput:
     """
     Generate an image from a retrosynthesis route.
 
     Args:
         route (Route): The retrosynthesis route to convert to an image.
+        image_description (str): A description or title for the generated image.
 
     Returns:
-        str: The file path to the generated image.
+        ImageOutput: An object containing the file path to the generated image and its description.
     """
     image = RouteImageFactory(route).image
 
@@ -57,4 +64,4 @@ def route_to_image(route: Route) -> str:
         temp_file_path = tmp_file.name
 
     logger.info(f"Generated image for route, saved to {temp_file_path}")
-    return temp_file_path
+    return ImageOutput(file_path=temp_file_path, description=image_description)
