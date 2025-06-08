@@ -5,6 +5,7 @@ import logging
 
 from aizynthfinder.aizynthfinder import AiZynthFinder
 from pydantic_ai import Agent, Tool, result
+from pydantic_ai.agent import AgentRunResult
 from pydantic_ai.common_tools.duckduckgo import duckduckgo_search_tool
 from pydantic_ai.messages import UserPromptPart
 
