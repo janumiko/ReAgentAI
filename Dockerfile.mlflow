@@ -1,7 +1,7 @@
 FROM python:3.11-slim
 
 # Install MLflow and downgrade protobuf to a compatible version
-RUN pip install mlflow==2.19.0 protobuf==3.20.1
+RUN pip install mlflow==2.22.1 protobuf==3.20.1
 
 # Expose the port for MLflow UI
 EXPOSE 5000
