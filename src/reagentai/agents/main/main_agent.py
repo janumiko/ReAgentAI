@@ -89,7 +89,7 @@ class MainAgent:
 
         self.model_name = model_name
         self._agent = self._create_agent()
-        logger.info(f"RetrosynthAgent model set to: {model_name}")
+        logger.info(f"MainAgent model set to: {model_name}")
 
     def get_token_usage(self) -> int:
         """
