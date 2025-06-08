@@ -73,6 +73,10 @@ To run both MLflow server and ReAgentAI:
 sudo docker compose up
 ```
 
+### Running Tests
+```shell
+pytest
+```
 
 ### Troubleshooting
 Problem:
