@@ -3,6 +3,8 @@ import logging
 from rdkit import Chem, DataStructs
 from rdkit.Chem import AllChem
 
+from src.reagentai.tools.popular_smiles_dataset import SMILES_DEFAULT_LIST
+
 logger = logging.getLogger(__name__)
 
 
@@ -28,7 +30,7 @@ def is_valid_smiles(smiles: str, sanitize: bool = True) -> bool:
 
 
 def find_similar_molecules(
-    query_smiles: str, target_smiles_list: list[str], top_n: int = 5
+    query_smiles: str, target_smiles_list: list[str] | None = None, top_n: int = 5
 ) -> list[tuple[str, float]]:
     """
     Finds molecules similar to a query SMILES string from a list of target SMILES strings
@@ -48,6 +50,8 @@ def find_similar_molecules(
     Raises:
         ValueError: If the query_smiles is invalid.
     """
+    if target_smiles_list is None:
+        target_smiles_list = SMILES_DEFAULT_LIST
     logger.info(
         f"[TASK] [FIND_SIMILAR_MOLECULES] Arguments: query_smiles: {query_smiles}, "
         f"number of targets: {len(target_smiles_list)}, top_n: {top_n}"
