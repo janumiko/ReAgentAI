@@ -11,6 +11,7 @@ EXAMPLE_PROMPTS = [
     "Suggest a retrosynthesis for Aspirin. Show the top 3 routes.",
     "Suggest a retrosynthesis for Ibuprofen. Show all molecule images from the first route.",
     "Show in the image the best synthesis route of COc1cccc(OC(=O)/C=C/c2cc(OC)c(OC)c(OC)c2)c1.",
+    "Find molecules similar to Aspirin (O=C(C)Oc1ccccc1C(=O)O) from the following list: Paracetamol (CC(=O)Nc1ccc(O)cc1), Ibuprofen (CC(C)Cc1ccc(C(C)C(=O)O)cc1), Naproxen (COc1ccc2cc(C(C)C(=O)O)ccc2c1). Show the top 2.",
 ]
 
 DEFAULT_LOG_LEVEL: int = INFO
