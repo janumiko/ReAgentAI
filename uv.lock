@@ -3172,6 +3172,11 @@ dependencies = [
     { name = "python-dotenv" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "aizynthfinder", specifier = ">=4.3.2" },
@@ -3180,6 +3185,9 @@ requires-dist = [
     { name = "pydantic-ai", specifier = ">=0.2.4" },
     { name = "python-dotenv", specifier = ">=1.1.0" },
 ]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest", specifier = ">=8.3.5" }]
 
 [[package]]
 name = "recommonmark"

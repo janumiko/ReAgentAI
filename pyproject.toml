@@ -12,6 +12,15 @@ dependencies = [
     "mlflow>=2.22.1",
 ]
 
+[dependency-groups]
+dev = [
+    "pytest>=8.3.5",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+
 [tool.black]
 target-version = ["py310", "py311"]
 line-length = 99
