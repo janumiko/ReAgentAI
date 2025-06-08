@@ -18,7 +18,6 @@ ReAgentAI is an advanced chemical assistant powered by AI that provides comprehe
 - **USPTO-trained models**: Leveraging one of the largest chemical reaction databases
 - **ZINC stock collection**: Access to commercially available compounds
 - **Curated molecular datasets**: ~16,000 drug-like molecules for similarity searches
-- **Morgan fingerprints**: ECFP4-like circular fingerprints for molecular similarity
 
 ## 🛠 Setup
 
