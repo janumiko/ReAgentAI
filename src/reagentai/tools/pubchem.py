@@ -1,6 +1,7 @@
 import logging
 
 import pubchempy as pcp
+
 from src.reagentai.tools.smiles import is_valid_smiles
 
 logger = logging.getLogger(__name__)
@@ -81,10 +82,10 @@ def get_smiles_from_name(compound_name: str) -> str:
 
         # Check if it's a network-related error
         if "connection" in str(e).lower() or "network" in str(e).lower():
-            raise ConnectionError(f"Failed to connect to PubChem: {str(e)}")
+            raise ConnectionError(f"Failed to connect to PubChem: {str(e)}") from e
 
         # For other exceptions, wrap in ValueError
-        raise ValueError(f"Failed to retrieve SMILES for '{compound_name}': {str(e)}")
+        raise ValueError(f"Failed to retrieve SMILES for '{compound_name}': {str(e)}") from e
 
 
 def get_compound_info(compound_name: str) -> dict[str, str | None]:
@@ -163,10 +164,12 @@ def get_compound_info(compound_name: str) -> dict[str, str | None]:
 
         # Check if it's a network-related error
         if "connection" in str(e).lower() or "network" in str(e).lower():
-            raise ConnectionError(f"Failed to connect to PubChem: {str(e)}")
+            raise ConnectionError(f"Failed to connect to PubChem: {str(e)}") from e
 
         # For other exceptions, wrap in ValueError
-        raise ValueError(f"Failed to retrieve compound info for '{compound_name}': {str(e)}") from e
+        raise ValueError(
+            f"Failed to retrieve compound info for '{compound_name}': {str(e)}"
+        ) from e
 
 
 def get_name_from_smiles(smiles: str) -> str:
