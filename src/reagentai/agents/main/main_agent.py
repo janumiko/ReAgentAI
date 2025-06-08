@@ -180,6 +180,7 @@ class MainAgent:
 
         return result
 
+
 def create_main_agent() -> MainAgent:
     """
     Creates and returns the main agent client with the specified model and instructions.
