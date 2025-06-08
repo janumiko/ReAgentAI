@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 
 import pubchempy as pcp
 
@@ -47,7 +46,7 @@ def get_smiles_from_name(compound_name: str) -> str:
 
     try:
         # Search for the compound by name
-        compounds = pcp.get_compounds(compound_name, 'name')
+        compounds = pcp.get_compounds(compound_name, "name")
 
         if not compounds:
             logger.warning(f"No compounds found for name: {compound_name}")
@@ -82,7 +81,7 @@ def get_smiles_from_name(compound_name: str) -> str:
         raise ValueError(f"Failed to retrieve SMILES for '{compound_name}': {str(e)}")
 
 
-def get_compound_info(compound_name: str) -> dict[str, Optional[str]]:
+def get_compound_info(compound_name: str) -> dict[str, str | None]:
     """
     Retrieve comprehensive information about a chemical compound from PubChem.
 
@@ -122,7 +121,7 @@ def get_compound_info(compound_name: str) -> dict[str, Optional[str]]:
 
     try:
         # Search for the compound by name
-        compounds = pcp.get_compounds(compound_name, 'name')
+        compounds = pcp.get_compounds(compound_name, "name")
 
         if not compounds:
             logger.warning(f"No compounds found for name: {compound_name}")
@@ -133,13 +132,16 @@ def get_compound_info(compound_name: str) -> dict[str, Optional[str]]:
 
         # Extract comprehensive information
         info = {
-            'smiles': getattr(compound, 'canonical_smiles', None),
-            'molecular_formula': getattr(compound, 'molecular_formula', None),
-            'molecular_weight': str(getattr(compound, 'molecular_weight', None)) if hasattr(compound,
-                                                                                            'molecular_weight') else None,
-            'iupac_name': getattr(compound, 'iupac_name', None),
-            'cid': str(getattr(compound, 'cid', None)) if hasattr(compound, 'cid') else None,
-            'synonyms': getattr(compound, 'synonyms', [])[:5] if hasattr(compound, 'synonyms') else []
+            "smiles": getattr(compound, "canonical_smiles", None),
+            "molecular_formula": getattr(compound, "molecular_formula", None),
+            "molecular_weight": str(getattr(compound, "molecular_weight", None))
+            if hasattr(compound, "molecular_weight")
+            else None,
+            "iupac_name": getattr(compound, "iupac_name", None),
+            "cid": str(getattr(compound, "cid", None)) if hasattr(compound, "cid") else None,
+            "synonyms": getattr(compound, "synonyms", [])[:5]
+            if hasattr(compound, "synonyms")
+            else [],
         }
 
         logger.info(f"Successfully retrieved compound info for {compound_name}")
@@ -158,4 +160,52 @@ def get_compound_info(compound_name: str) -> dict[str, Optional[str]]:
             raise ConnectionError(f"Failed to connect to PubChem: {str(e)}")
 
         # For other exceptions, wrap in ValueError
-        raise ValueError(f"Failed to retrieve compound info for '{compound_name}': {str(e)}")
+        raise ValueError(f"Failed to retrieve compound info for '{compound_name}': {str(e)}") from e
+
+
+def get_name_from_smiles(smiles: str) -> str:
+    """
+    Retrieve the best-matching chemical name for a given SMILES string using PubChem.
+
+    Args:
+        smiles (str): The SMILES string of the compound.
+
+    Returns:
+        str: The best-matching chemical name (IUPAC or synonym) from PubChem.
+
+    Raises:
+        ValueError: If no compound is found for the SMILES or no name is available.
+        ConnectionError: If there's a network issue connecting to PubChem servers.
+    """
+    logger.info(f"[TASK] [GET_NAME_FROM_SMILES] Arguments: smiles: {smiles}")
+
+    if not smiles or not smiles.strip():
+        logger.error("Empty or invalid SMILES provided")
+        raise ValueError("SMILES string cannot be empty")
+
+    smiles = smiles.strip()
+
+    try:
+        compounds = pcp.get_compounds(smiles, "smiles")
+        if not compounds:
+            logger.warning(f"No compounds found for SMILES: {smiles}")
+            raise ValueError(f"No compound found in PubChem for SMILES: '{smiles}'")
+        compound = compounds[0]
+        # Prefer IUPAC name, fall back to first synonym
+        name = getattr(compound, "iupac_name", None)
+        if not name:
+            synonyms = getattr(compound, "synonyms", [])
+            if synonyms:
+                name = synonyms[0]
+        if not name:
+            logger.error(f"No name found for SMILES: {smiles}")
+            raise ValueError(f"No name available for SMILES: '{smiles}'")
+        logger.info(f"Successfully retrieved name for SMILES {smiles}: {name}")
+        return name
+    except Exception as e:
+        if isinstance(e, ValueError):
+            raise
+        logger.error(f"Error retrieving name for SMILES {smiles}: {str(e)}")
+        if "connection" in str(e).lower() or "network" in str(e).lower():
+            raise ConnectionError(f"Failed to connect to PubChem: {str(e)}") from e
+        raise ValueError(f"Failed to retrieve name for SMILES '{smiles}': {str(e)}") from e
