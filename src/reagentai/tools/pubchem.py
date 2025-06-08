@@ -1,70 +1,161 @@
 import logging
+from typing import Optional
 
 import pubchempy as pcp
 
 logger = logging.getLogger(__name__)
 
 
-def name_to_smiles(chemical_name: str) -> str:
+def get_smiles_from_name(compound_name: str) -> str:
     """
-    Finds the canonical SMILES string for a given chemical name using PubChem database.
+    Retrieve the SMILES string for a chemical compound using its common name via PubChem.
 
-    This function searches the PubChem database for a chemical compound by name and
-    returns its canonical SMILES representation. PubChem is a comprehensive database
-    maintained by the National Center for Biotechnology Information (NCBI) containing
-    millions of chemical structures and their associated data.
+    This function searches the PubChem database to find the canonical SMILES representation
+    of a chemical compound based on its common name, IUPAC name, or other identifiers.
+    PubChem is a comprehensive chemical database maintained by the NIH that contains
+    millions of chemical structures and their properties.
 
     Args:
-        chemical_name (str): The name of the chemical compound to search for.
-                           Can be a common name (e.g., "aspirin", "caffeine"),
-                           IUPAC name, or other chemical identifier.
+        compound_name (str): The name of the chemical compound to search for.
+                           This can be a common name (e.g., "aspirin", "caffeine"),
+                           IUPAC name, trade name, or other chemical identifier.
 
     Returns:
         str: The canonical SMILES string of the compound as found in PubChem.
 
     Raises:
-        ValueError: If no compound is found for the given name or if multiple
-                   ambiguous results are returned without a clear match.
+        ValueError: If the compound name is not found in PubChem or if no valid
+                   SMILES string could be retrieved.
+        ConnectionError: If there's a network issue connecting to PubChem servers.
 
     Example:
-        >>> smiles = name_to_smiles("aspirin")
-        >>> # Returns "CC(=O)OC1=CC=CC=C1C(=O)O"
-        >>> smiles = name_to_smiles("caffeine")
-        >>> # Returns "CN1C=NC2=C1C(=O)N(C(=O)N2C)C"
+        >>> smiles = get_smiles_from_name("aspirin")
+        >>> print(smiles)
+        "CC(=O)OC1=CC=CC=C1C(=O)O"
+
+        >>> smiles = get_smiles_from_name("caffeine")
+        >>> print(smiles)
+        "CN1C=NC2=C1C(=O)N(C(=O)N2C)C"
     """
-    logger.info(f"[TASK] [NAME_TO_SMILES] Arguments: chemical_name: {chemical_name}")
+    logger.info(f"[TASK] [GET_SMILES_FROM_NAME] Arguments: compound_name: {compound_name}")
 
-    if not chemical_name or not chemical_name.strip():
-        logger.error("Empty or invalid chemical name provided")
-        raise ValueError("Chemical name cannot be empty")
+    if not compound_name or not compound_name.strip():
+        logger.error("Empty or invalid compound name provided")
+        raise ValueError("Compound name cannot be empty")
 
-    chemical_name = chemical_name.strip()
+    compound_name = compound_name.strip()
 
     try:
         # Search for the compound by name
-        compounds = pcp.get_compounds(chemical_name, "name")
+        compounds = pcp.get_compounds(compound_name, 'name')
 
         if not compounds:
-            logger.warning(f"No compounds found for name: {chemical_name}")
-            raise ValueError(f"No compound found for name: {chemical_name}")
+            logger.warning(f"No compounds found for name: {compound_name}")
+            raise ValueError(f"No compound found in PubChem for name: '{compound_name}'")
 
         # Get the first (most relevant) compound
         compound = compounds[0]
 
-        # Get canonical SMILES
+        # Retrieve the canonical SMILES
         smiles = compound.canonical_smiles
 
         if not smiles:
-            logger.error(f"No SMILES found for compound: {chemical_name}")
-            raise ValueError(f"No SMILES representation found for: {chemical_name}")
+            logger.error(f"No SMILES found for compound: {compound_name}")
+            raise ValueError(f"No SMILES string available for compound: '{compound_name}'")
 
-        logger.info(f"Found SMILES for '{chemical_name}': {smiles}")
+        logger.info(f"Successfully retrieved SMILES for {compound_name}: {smiles}")
         logger.debug(f"PubChem CID: {compound.cid}")
 
         return smiles
 
     except Exception as e:
         if isinstance(e, ValueError):
-            raise
-        logger.error(f"Error searching PubChem for '{chemical_name}': {str(e)}")
-        raise ValueError(f"Failed to retrieve SMILES for '{chemical_name}': {str(e)}") from e
+            raise  # Re-raise ValueError as-is
+
+        logger.error(f"Error retrieving SMILES for {compound_name}: {str(e)}")
+
+        # Check if it's a network-related error
+        if "connection" in str(e).lower() or "network" in str(e).lower():
+            raise ConnectionError(f"Failed to connect to PubChem: {str(e)}")
+
+        # For other exceptions, wrap in ValueError
+        raise ValueError(f"Failed to retrieve SMILES for '{compound_name}': {str(e)}")
+
+
+def get_compound_info(compound_name: str) -> dict[str, Optional[str]]:
+    """
+    Retrieve comprehensive information about a chemical compound from PubChem.
+
+    This function provides additional chemical information beyond just the SMILES string,
+    including molecular formula, molecular weight, IUPAC name, and other identifiers.
+
+    Args:
+        compound_name (str): The name of the chemical compound to search for.
+
+    Returns:
+        dict[str, Optional[str]]: A dictionary containing compound information with keys:
+            - 'smiles': Canonical SMILES string
+            - 'molecular_formula': Molecular formula
+            - 'molecular_weight': Molecular weight in g/mol
+            - 'iupac_name': IUPAC systematic name
+            - 'cid': PubChem Compound ID
+            - 'synonyms': List of alternative names (first 5)
+
+    Raises:
+        ValueError: If the compound name is not found in PubChem.
+        ConnectionError: If there's a network issue connecting to PubChem servers.
+
+    Example:
+        >>> info = get_compound_info("aspirin")
+        >>> print(info['smiles'])
+        "CC(=O)OC1=CC=CC=C1C(=O)O"
+        >>> print(info['molecular_formula'])
+        "C9H8O4"
+    """
+    logger.info(f"[TASK] [GET_COMPOUND_INFO] Arguments: compound_name: {compound_name}")
+
+    if not compound_name or not compound_name.strip():
+        logger.error("Empty or invalid compound name provided")
+        raise ValueError("Compound name cannot be empty")
+
+    compound_name = compound_name.strip()
+
+    try:
+        # Search for the compound by name
+        compounds = pcp.get_compounds(compound_name, 'name')
+
+        if not compounds:
+            logger.warning(f"No compounds found for name: {compound_name}")
+            raise ValueError(f"No compound found in PubChem for name: '{compound_name}'")
+
+        # Get the first (most relevant) compound
+        compound = compounds[0]
+
+        # Extract comprehensive information
+        info = {
+            'smiles': getattr(compound, 'canonical_smiles', None),
+            'molecular_formula': getattr(compound, 'molecular_formula', None),
+            'molecular_weight': str(getattr(compound, 'molecular_weight', None)) if hasattr(compound,
+                                                                                            'molecular_weight') else None,
+            'iupac_name': getattr(compound, 'iupac_name', None),
+            'cid': str(getattr(compound, 'cid', None)) if hasattr(compound, 'cid') else None,
+            'synonyms': getattr(compound, 'synonyms', [])[:5] if hasattr(compound, 'synonyms') else []
+        }
+
+        logger.info(f"Successfully retrieved compound info for {compound_name}")
+        logger.debug(f"Compound info: {info}")
+
+        return info
+
+    except Exception as e:
+        if isinstance(e, ValueError):
+            raise  # Re-raise ValueError as-is
+
+        logger.error(f"Error retrieving compound info for {compound_name}: {str(e)}")
+
+        # Check if it's a network-related error
+        if "connection" in str(e).lower() or "network" in str(e).lower():
+            raise ConnectionError(f"Failed to connect to PubChem: {str(e)}")
+
+        # For other exceptions, wrap in ValueError
+        raise ValueError(f"Failed to retrieve compound info for '{compound_name}': {str(e)}")

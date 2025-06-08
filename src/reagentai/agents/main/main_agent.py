@@ -10,7 +10,7 @@ from pydantic_ai.common_tools.duckduckgo import duckduckgo_search_tool
 from src.reagentai.common.aizynthfinder import initialize_aizynthfinder
 from src.reagentai.constants import AIZYNTHFINDER_CONFIG_PATH
 from src.reagentai.tools.image import route_to_image, smiles_to_image
-from src.reagentai.tools.pubchem import name_to_smiles
+from src.reagentai.tools.pubchem import get_smiles_from_name, get_compound_info
 from src.reagentai.tools.retrosynthesis import perform_retrosynthesis
 from src.reagentai.tools.smiles import find_similar_molecules, is_valid_smiles
 
@@ -158,7 +158,8 @@ def create_main_agent() -> MainAgent:
         Tool(smiles_to_image),
         Tool(route_to_image),
         Tool(find_similar_molecules),
-        Tool(name_to_smiles),
+        Tool(get_smiles_from_name),
+        Tool(get_compound_info),
         duckduckgo_search_tool(),
     ]
 
