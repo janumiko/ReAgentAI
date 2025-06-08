@@ -176,11 +176,12 @@ async def stream_from_agent(
         chat_history.extend(generated_images)
         yield gr.skip(), chat_history, gr.skip(), gr.skip()
 
+    total_tokens = main_agent.get_total_token_usage()
     yield (
         gr.Textbox(interactive=True),
         gr.skip(),
         gr.skip(),
-        0,
+        total_tokens,
     )  # Re-enable input after streaming
 
 
@@ -197,11 +198,13 @@ def create_gradio_app(main_agent: MainAgent) -> gr.Blocks:
     with gr.Blocks(
         theme=gr.themes.Origin(),
         fill_height=True,
-        css=".contain { display: flex !important; flex-direction: column !important; }"
-        "#component-0, #component-3, #component-10, #component-8  { height: 100% !important; }"
-        "#chatbot_display { flex-grow: 1 !important; overflow: auto !important;}"
-        "#tool_display { flex-grow: 1 !important; overflow: auto !important;}"
-        "#col { height: calc(100vh - 112px - 16px) !important; }",
+        css="""
+        .contain { display: flex !important; flex-direction: column !important; }
+        #component-0, #component-3, #component-10, #component-8  { height: 100% !important; }
+        #chatbot_display { flex-grow: 1 !important; overflow: auto !important;}
+        #tool_display { flex-grow: 1 !important; overflow: auto !important;}
+        #col { height: calc(100vh - 112px - 16px) !important; }
+        """,
     ) as demo:
         # Main app layout
         gr.Markdown(

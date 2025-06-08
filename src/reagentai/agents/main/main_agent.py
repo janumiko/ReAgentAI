@@ -91,12 +91,12 @@ class MainAgent:
         self._agent = self._create_agent()
         logger.info(f"MainAgent model set to: {model_name}")
 
-    def get_token_usage(self) -> int:
+    def get_total_token_usage(self) -> int:
         """
-        Returns the token usage of the current agent.
+        Returns the total number of tokens used by the agent.
 
         Returns:
-            int: The number of tokens used.
+            int: The total number of tokens used by the agent.
         """
         if self.usage:
             return self.usage.total_tokens
