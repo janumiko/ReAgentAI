@@ -5,6 +5,9 @@
 
 ReAgentAI is an advanced chemical assistant powered by AI that provides comprehensive support for chemistry-related tasks. Built with state-of-the-art machine learning models and chemical informatics tools, ReAgentAI enables researchers, chemists, and students to explore chemical space, perform retrosynthetic analysis, and visualize molecular structures with unprecedented ease and accuracy.
 
+<!-- centerize image -->
+![ReAgentAI Screenshot](static/screenshot.png)
+
 ## 🚀 Features
 
 ### Core Capabilities
