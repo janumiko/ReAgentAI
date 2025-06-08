@@ -28,6 +28,9 @@ def perform_retrosynthesis(
         ValueError: If no retrosynthesis routes are found for the target SMILES.
     """
 
+    logger.info(f"[TASK] [PERFORM_RETROSYNTHESIS] Arguments: target_smile: {target_smile}")
+    logger.debug(f"Context: {ctx}")
+
     finder = ctx.deps.aizynth_finder
 
     # 1. Check if the target SMILES is already in cache
@@ -58,5 +61,7 @@ def perform_retrosynthesis(
 
     # 5. Cache the result
     RetrosynthesisCache.add(target_smile, route_collection)
+
+    logger.debug(f"Output perform_retrosynthesis: {route_collection}")
 
     return route_collection

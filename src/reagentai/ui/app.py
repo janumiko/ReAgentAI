@@ -1,13 +1,20 @@
 import functools
+from typing import Literal
 
 import gradio as gr
 
-from src.reagentai.common.client import LLMClient
+from src.reagentai.agents.main.main_agent import MainAgent
 from src.reagentai.constants import AVAILABLE_LLM_MODELS, EXAMPLE_PROMPTS
+
+ChatMessage = dict[str, str | dict[str, str]]
+ChatHistory = list[ChatMessage]
+UserInput = dict[str, str | list[str]]
 
 
 # UI Creation Helper Functions
-def create_settings_panel(chat_input_component: gr.MultimodalTextbox):
+def create_settings_panel(
+    chat_input_component: gr.MultimodalTextbox,
+) -> tuple[gr.Dropdown, gr.Number]:
     with gr.Column(scale=1, min_width=200):
         gr.Markdown("### Model Settings")
         llm_model_dropdown = gr.Dropdown(
@@ -32,7 +39,7 @@ def create_settings_panel(chat_input_component: gr.MultimodalTextbox):
     return llm_model_dropdown, token_usage_display
 
 
-def create_chat_interface():
+def create_chat_interface() -> tuple[gr.Chatbot, gr.MultimodalTextbox]:
     with gr.Column(scale=3):
         gr.Markdown("### Chat & Results")
         chatbot_display = gr.Chatbot(
@@ -51,7 +58,9 @@ def create_chat_interface():
 
 
 # Event Handler Functions
-def add_user_message_to_history(chat_history: list, user_input: dict):
+def add_user_message_to_history(
+    chat_history: ChatHistory, user_input: UserInput
+) -> tuple[ChatHistory, gr.MultimodalTextbox]:
     """
     Adds user message (text and/or files) to the chat history.
     Files are added first, then the text message if it exists.
@@ -64,33 +73,37 @@ def add_user_message_to_history(chat_history: list, user_input: dict):
     return chat_history, gr.MultimodalTextbox(value=None, interactive=False)
 
 
-def handle_bot_response(chat_history: list, llm_client: LLMClient):
+def handle_bot_response(
+    chat_history: ChatHistory, llm_client: MainAgent
+) -> tuple[ChatHistory, int]:
     """
     Gets LLM response, updates chat history and token usage.
     """
-    user_query = chat_history[-1]["content"] if chat_history else ""
-    response = llm_client.respond(user_query)
+    user_query: str = chat_history[-1]["content"] if chat_history else ""
+    response: list[ChatMessage] = llm_client.respond(user_query)
     chat_history.extend(response)
-    token_used = llm_client.get_token_usage()
+    token_used: int = llm_client.get_token_usage()
     return chat_history, token_used
 
 
-def handle_clear_chat(llm_client: LLMClient):
+def handle_clear_chat(llm_client: MainAgent) -> tuple[list[None], Literal[0]]:
     """
     Clears LLM history and resets chat display.
+    Returns empty list for chat history and 0 for token usage.
     """
+
     llm_client.clear_history()
     return [], 0
 
 
-def handle_model_change(model_name: str, llm_client: LLMClient):
+def handle_model_change(model_name: str, llm_client: MainAgent) -> None:
     """
     Sets the new LLM model in the client.
     """
     llm_client.set_model(model_name)
 
 
-def re_enable_chat_input():
+def re_enable_chat_input() -> gr.MultimodalTextbox:
     """
     Re-enables the chat input textbox.
     """
@@ -98,7 +111,7 @@ def re_enable_chat_input():
 
 
 # Main App Creation Function
-def create_gradio_app(llm_client: LLMClient):
+def create_gradio_app(llm_client: MainAgent) -> gr.Blocks:
     with gr.Blocks(
         theme=gr.themes.Origin(),
     ) as demo:
