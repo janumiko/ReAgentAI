@@ -87,9 +87,7 @@ class MLflowTracker:
         except Exception as e:
             logger.warning(f"Failed to log params to MLflow: {e}")
 
-    def log_metrics(
-        self, metrics: dict[str, float | int], step: int | None = None
-    ) -> None:
+    def log_metrics(self, metrics: dict[str, float | int], step: int | None = None) -> None:
         """Log metrics to the current run."""
         if not self.mlflow_enabled or not self.active_run:
             return
