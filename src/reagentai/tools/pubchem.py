@@ -1,6 +1,7 @@
 import logging
 
 import pubchempy as pcp
+from src.reagentai.tools.smiles import is_valid_smiles
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +44,11 @@ def get_smiles_from_name(compound_name: str) -> str:
         raise ValueError("Compound name cannot be empty")
 
     compound_name = compound_name.strip()
+
+    # Check if the input is already a valid SMILES string
+    if is_valid_smiles(compound_name):
+        logger.info(f"Input appears to be a valid SMILES, returning as is: {compound_name}")
+        return compound_name
 
     try:
         # Search for the compound by name
