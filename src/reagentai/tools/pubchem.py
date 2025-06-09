@@ -1,6 +1,7 @@
 import logging
 
 import pubchempy as pcp
+from pydantic_ai.exceptions import ModelRetry
 
 from src.reagentai.tools.smiles import is_valid_smiles
 
@@ -25,9 +26,8 @@ def get_smiles_from_name(compound_name: str) -> str:
         str: The canonical SMILES string of the compound as found in PubChem.
 
     Raises:
-        ValueError: If the compound name is not found in PubChem or if no valid
-                   SMILES string could be retrieved.
-        ConnectionError: If there's a network issue connecting to PubChem servers.
+        ModelRetry: If the compound name is not found in PubChem, if no valid
+                   SMILES string could be retrieved, or if there's a network issue.
 
     Example:
         >>> smiles = get_smiles_from_name("aspirin")
@@ -42,7 +42,7 @@ def get_smiles_from_name(compound_name: str) -> str:
 
     if not compound_name or not compound_name.strip():
         logger.error("Empty or invalid compound name provided")
-        raise ValueError("Compound name cannot be empty")
+        raise ModelRetry("Compound name cannot be empty")
 
     compound_name = compound_name.strip()
 
@@ -57,7 +57,7 @@ def get_smiles_from_name(compound_name: str) -> str:
 
         if not compounds:
             logger.warning(f"No compounds found for name: {compound_name}")
-            raise ValueError(f"No compound found in PubChem for name: '{compound_name}'")
+            raise ModelRetry(f"No compound found in PubChem for name: '{compound_name}'")
 
         # Get the first (most relevant) compound
         compound = compounds[0]
@@ -67,7 +67,7 @@ def get_smiles_from_name(compound_name: str) -> str:
 
         if not smiles:
             logger.error(f"No SMILES found for compound: {compound_name}")
-            raise ValueError(f"No SMILES string available for compound: '{compound_name}'")
+            raise ModelRetry(f"No SMILES string available for compound: '{compound_name}'")
 
         logger.info(f"Successfully retrieved SMILES for {compound_name}: {smiles}")
         logger.debug(f"PubChem CID: {compound.cid}")
@@ -75,17 +75,17 @@ def get_smiles_from_name(compound_name: str) -> str:
         return smiles
 
     except Exception as e:
-        if isinstance(e, ValueError):
-            raise  # Re-raise ValueError as-is
+        if isinstance(e, ModelRetry):
+            raise  # Re-raise ModelRetry as-is
 
         logger.error(f"Error retrieving SMILES for {compound_name}: {str(e)}")
 
-        # Check if it's a network-related error
+        # For all exceptions, wrap in ModelRetry
+        error_msg = f"Failed to retrieve SMILES for '{compound_name}': {str(e)}"
         if "connection" in str(e).lower() or "network" in str(e).lower():
-            raise ConnectionError(f"Failed to connect to PubChem: {str(e)}") from e
+            error_msg = f"Failed to connect to PubChem: {str(e)}"
 
-        # For other exceptions, wrap in ValueError
-        raise ValueError(f"Failed to retrieve SMILES for '{compound_name}': {str(e)}") from e
+        raise ModelRetry(error_msg) from e
 
 
 def get_compound_info(compound_name: str) -> dict[str, str | list | None]:
@@ -108,8 +108,7 @@ def get_compound_info(compound_name: str) -> dict[str, str | list | None]:
             - 'synonyms': List of alternative names (first 5)
 
     Raises:
-        ValueError: If the compound name is not found in PubChem.
-        ConnectionError: If there's a network issue connecting to PubChem servers.
+        ModelRetry: If the compound name is not found in PubChem or if there's a network issue.
 
     Example:
         >>> info = get_compound_info("aspirin")
@@ -122,7 +121,7 @@ def get_compound_info(compound_name: str) -> dict[str, str | list | None]:
 
     if not compound_name or not compound_name.strip():
         logger.error("Empty or invalid compound name provided")
-        raise ValueError("Compound name cannot be empty")
+        raise ModelRetry("Compound name cannot be empty")
 
     compound_name = compound_name.strip()
 
@@ -132,7 +131,7 @@ def get_compound_info(compound_name: str) -> dict[str, str | list | None]:
 
         if not compounds:
             logger.warning(f"No compounds found for name: {compound_name}")
-            raise ValueError(f"No compound found in PubChem for name: '{compound_name}'")
+            raise ModelRetry(f"No compound found in PubChem for name: '{compound_name}'")
 
         # Get the first (most relevant) compound
         compound = compounds[0]
@@ -157,19 +156,17 @@ def get_compound_info(compound_name: str) -> dict[str, str | list | None]:
         return info
 
     except Exception as e:
-        if isinstance(e, ValueError):
-            raise  # Re-raise ValueError as-is
+        if isinstance(e, ModelRetry):
+            raise  # Re-raise ModelRetry as-is
 
         logger.error(f"Error retrieving compound info for {compound_name}: {str(e)}")
 
-        # Check if it's a network-related error
+        # For all exceptions, wrap in ModelRetry
+        error_msg = f"Failed to retrieve compound info for '{compound_name}': {str(e)}"
         if "connection" in str(e).lower() or "network" in str(e).lower():
-            raise ConnectionError(f"Failed to connect to PubChem: {str(e)}") from e
+            error_msg = f"Failed to connect to PubChem: {str(e)}"
 
-        # For other exceptions, wrap in ValueError
-        raise ValueError(
-            f"Failed to retrieve compound info for '{compound_name}': {str(e)}"
-        ) from e
+        raise ModelRetry(error_msg) from e
 
 
 def get_name_from_smiles(smiles: str) -> str:
@@ -183,14 +180,14 @@ def get_name_from_smiles(smiles: str) -> str:
         str: The best-matching chemical name (IUPAC or synonym) from PubChem.
 
     Raises:
-        ValueError: If no compound is found for the SMILES or no name is available.
-        ConnectionError: If there's a network issue connecting to PubChem servers.
+        ModelRetry: If no compound is found for the SMILES, if no name is available,
+                    or if there's a network issue connecting to PubChem servers.
     """
     logger.info(f"[TASK] [GET_NAME_FROM_SMILES] Arguments: smiles: {smiles}")
 
     if not smiles or not smiles.strip():
         logger.error("Empty or invalid SMILES provided")
-        raise ValueError("SMILES string cannot be empty")
+        raise ModelRetry("SMILES string cannot be empty")
 
     smiles = smiles.strip()
 
@@ -198,7 +195,7 @@ def get_name_from_smiles(smiles: str) -> str:
         compounds = pcp.get_compounds(smiles, "smiles")
         if not compounds:
             logger.warning(f"No compounds found for SMILES: {smiles}")
-            raise ValueError(f"No compound found in PubChem for SMILES: '{smiles}'")
+            raise ModelRetry(f"No compound found in PubChem for SMILES: '{smiles}'")
         compound = compounds[0]
         # Prefer IUPAC name, fall back to first synonym
         name = getattr(compound, "iupac_name", None)
@@ -208,13 +205,18 @@ def get_name_from_smiles(smiles: str) -> str:
                 name = synonyms[0]
         if not name:
             logger.error(f"No name found for SMILES: {smiles}")
-            raise ValueError(f"No name available for SMILES: '{smiles}'")
+            raise ModelRetry(f"No name available for SMILES: '{smiles}'")
         logger.info(f"Successfully retrieved name for SMILES {smiles}: {name}")
         return name
     except Exception as e:
-        if isinstance(e, ValueError):
-            raise
+        if isinstance(e, ModelRetry):
+            raise  # Re-raise ModelRetry as-is
+
         logger.error(f"Error retrieving name for SMILES {smiles}: {str(e)}")
+
+        # For all exceptions, wrap in ModelRetry
+        error_msg = f"Failed to retrieve name for SMILES '{smiles}': {str(e)}"
         if "connection" in str(e).lower() or "network" in str(e).lower():
-            raise ConnectionError(f"Failed to connect to PubChem: {str(e)}") from e
-        raise ValueError(f"Failed to retrieve name for SMILES '{smiles}': {str(e)}") from e
+            error_msg = f"Failed to connect to PubChem: {str(e)}"
+
+        raise ModelRetry(error_msg) from e
