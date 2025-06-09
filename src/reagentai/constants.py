@@ -11,6 +11,9 @@ EXAMPLE_PROMPTS = [
     "How to synthesize Aspirin? Can u tell me the best steps to achieve this?",
     "Suggest a retrosynthesis for Ibuprofen. Show all molecule images from the best route.",
     "Find molecules similar to Aspirin. Show the top 5.",
+    "What is the IUPAC name and molecular formula of Paracetamol?",
+    "Convert this SMILES to a chemical name: CC(=O)OC1=CC=CC=C1C(=O)O",
+    "Tell me the detailed properties of Gabapentin.",
 ]
 
 DEFAULT_LOG_LEVEL: int = INFO
