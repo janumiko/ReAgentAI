@@ -33,3 +33,5 @@ APP_CSS: str = """
         align-items: center;
     }
 """
+
+POPULAR_SMILES_PATH: str = "data/popular_smiles.csv"

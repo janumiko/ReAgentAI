@@ -1,12 +1,16 @@
 import heapq
 import logging
 
+import pandas as pd
 from rdkit import Chem, DataStructs
 from rdkit.Chem import AllChem
 
-from src.reagentai.tools.popular_smiles_dataset import SMILES_DEFAULT_LIST
+from src.reagentai.constants import POPULAR_SMILES_PATH
 
 logger = logging.getLogger(__name__)
+
+
+_popular_smiles: list[str] = pd.read_csv(POPULAR_SMILES_PATH)["SMILES"].to_list()
 
 
 def is_valid_smiles(smiles: str, sanitize: bool = True) -> bool:
@@ -31,7 +35,7 @@ def is_valid_smiles(smiles: str, sanitize: bool = True) -> bool:
 
 
 def find_similar_molecules(
-    query_smiles: str, target_smiles_list: list[str] = SMILES_DEFAULT_LIST, top_n: int = 5
+    query_smiles: str, target_smiles_list: list[str] = _popular_smiles, top_n: int = 5
 ) -> list[tuple[str, float]]:
     """
     Finds molecules similar to a query SMILES string from a list of target SMILES strings
@@ -45,9 +49,9 @@ def find_similar_molecules(
         query_smiles (str): The SMILES string of the query molecule. Must be a valid SMILES
                            string that RDKit can parse.
         target_smiles_list (list[str], optional): A list of SMILES strings of molecules to
-                                                 compare against. Defaults to SMILES_DEFAULT_LIST,
-                                                 which contains a curated set of ~16,000 drug-like
-                                                 molecules commonly used in chemical informatics.
+                                                 compare against. Defaults to a curated set
+                                                 of ~16,000 drug-like molecules
+                                                 commonly used in chemical informatics.
         top_n (int, optional): The number of most similar molecules to return. Defaults to 5.
 
     Returns:
