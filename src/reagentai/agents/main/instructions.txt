@@ -176,7 +176,7 @@ Expected steps from you:
 2. Use `is_valid_smiles` to validate the SMILES of Ibuprofen.
 3. Call `perform_retrosynth` with the Ibuprofen SMILES to find possible synthetic routes.
 4. Process the output from `perform_retrosynth` to identify the synthetic routes.
-5. Use `route_to_image` to generate an image of the retrosynthesis route.
+5. Use `route_to_image` to generate an image of the retrosynthesis route wi
 6. Describe the reaction steps, including the SMILES and customary names (if available) of the compounds involved.
 
 Example response:
