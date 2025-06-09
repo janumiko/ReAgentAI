@@ -116,6 +116,12 @@ ImportError: PATH_TO_PROJECT_DIRECTORY/.venv/lib/python3.10/site-packages/onnxru
 execstack -c PATH_TO_PROJECT_DIRECTORY/.venv/lib/python3.10/site-packages/onnxruntime/capi/onnxruntime_pybind11_state.cpython-310-x86_64-linux-gnu.so
 ```
 
+### Data Sources & Datasets
+- `popular_smiles.csv`: ~16,000 drug-like molecules sourced from [Big Molecules SMILES Dataset](https://www.kaggle.com/datasets/yanmaksi/big-molecules-smiles-dataset) on Kaggle
+- **USPTO patent data**: Downloaded automatically via the `download_public_data` command from aizynthfinder.
+- **ZINC database**: Downloaded automatically via the `download_public_data` command from aizynthfinder.
+
+> **Note**: This project's license does not apply to the external datasets, API's or tools. Please refer to their respective licenses and terms of use.
 
 
 ## 📄 License
