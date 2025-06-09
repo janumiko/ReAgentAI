@@ -6,7 +6,7 @@ AVAILABLE_LLM_MODELS = [
     "gemini-2.5-flash-preview-04-17",
 ]
 AIZYNTHFINDER_CONFIG_PATH: str = "data/config.yml"
-EXAMPLE_PROMPTS = [
+EXAMPLE_PROMPTS: list[str] = [
     "Can u tell me the SMILES of Caffeine? And generate an image of the compound.",
     "How to synthesize Aspirin? Can u tell me the best steps to achieve this?",
     "Suggest a retrosynthesis for Ibuprofen. Show all molecule images from the best route.",
@@ -15,6 +15,7 @@ EXAMPLE_PROMPTS = [
     "Convert this SMILES to a chemical name: CC(=O)OC1=CC=CC=C1C(=O)O",
     "Tell me the detailed properties of Gabapentin.",
 ]
+EXAMPLES_PER_PAGE: int = 4
 
 DEFAULT_LOG_LEVEL: int = INFO
 LOG_DIR: Path = Path("logs")

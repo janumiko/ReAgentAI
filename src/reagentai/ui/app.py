@@ -6,7 +6,12 @@ from pydantic_ai.messages import ToolCallPart, ToolReturnPart
 
 from src.reagentai.agents.main.main_agent import MainAgent
 from src.reagentai.common.typing import ChatHistory
-from src.reagentai.constants import APP_CSS, AVAILABLE_LLM_MODELS, EXAMPLE_PROMPTS
+from src.reagentai.constants import (
+    APP_CSS,
+    AVAILABLE_LLM_MODELS,
+    EXAMPLE_PROMPTS,
+    EXAMPLES_PER_PAGE,
+)
 from src.reagentai.models.output import ImageOutput
 
 
@@ -23,33 +28,35 @@ def create_settings_panel(
         tuple: A tuple containing the model dropdown, usage counter, and tool display components.
     """
     with gr.Column(scale=2, elem_id="col"):
-        gr.Markdown("### Model Settings")
-        model_dropdown = gr.Dropdown(
-            label="Select LLM Model",
-            choices=AVAILABLE_LLM_MODELS,
-            value=AVAILABLE_LLM_MODELS[0],
-        )
-        usage_counter = gr.Number(
-            label="Total Token Usage",
-            value=0,
-            precision=0,
-            interactive=False,
-            visible=True,
-        )
+        with gr.Tab("Settings"):
+            gr.Markdown("### Model Settings")
+            model_dropdown = gr.Dropdown(
+                label="Select LLM Model",
+                choices=AVAILABLE_LLM_MODELS,
+                value=AVAILABLE_LLM_MODELS[0],
+            )
+            usage_counter = gr.Number(
+                label="Total Token Usage",
+                value=0,
+                precision=0,
+                interactive=False,
+                visible=True,
+            )
 
-        gr.Examples(
-            examples=EXAMPLE_PROMPTS,
-            inputs=chat_input_component,
-            label="Example Prompts",
-        )
-
-        gr.Markdown("### Tool Usage History")
-        tool_display = gr.Chatbot(
-            type="messages",
-            label="Tool Usage",
-            layout="panel",
-            elem_id="tool_display",
-        )
+            gr.Examples(
+                examples=EXAMPLE_PROMPTS,
+                inputs=chat_input_component,
+                label="Example Prompts",
+                examples_per_page=EXAMPLES_PER_PAGE,
+            )
+        with gr.Tab("Tool Usage"):
+            gr.Markdown("### Tool Usage History")
+            tool_display = gr.Chatbot(
+                type="messages",
+                label="Tool Usage",
+                layout="panel",
+                elem_id="tool_display",
+            )
 
     return model_dropdown, usage_counter, tool_display
 
@@ -180,7 +187,7 @@ def run_agent(
                     if call.tool_name in ["smiles_to_image", "route_to_image"]:
                         output: ImageOutput = call.content
                         metadata = {
-                            "title": output.description,
+                            "title": output.title,
                             "status": "done",
                         }
                         gr_message = {
