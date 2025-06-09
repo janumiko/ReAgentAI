@@ -6,7 +6,12 @@ from pydantic_ai.messages import ToolCallPart, ToolReturnPart
 
 from src.reagentai.agents.main.main_agent import MainAgent
 from src.reagentai.common.typing import ChatHistory
-from src.reagentai.constants import APP_CSS, AVAILABLE_LLM_MODELS, EXAMPLE_PROMPTS
+from src.reagentai.constants import (
+    APP_CSS,
+    AVAILABLE_LLM_MODELS,
+    EXAMPLE_PROMPTS,
+    EXAMPLES_PER_PAGE,
+)
 from src.reagentai.models.output import ImageOutput
 
 
@@ -42,7 +47,7 @@ def create_settings_panel(
                 examples=EXAMPLE_PROMPTS,
                 inputs=chat_input_component,
                 label="Example Prompts",
-                examples_per_page=4,
+                examples_per_page=EXAMPLES_PER_PAGE,
             )
         with gr.Tab("Tool Usage"):
             gr.Markdown("### Tool Usage History")
