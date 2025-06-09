@@ -1,7 +1,7 @@
 import functools
 
 import gradio as gr
-from pydantic_ai import UnexpectedModelBehavior, UsageLimitExceeded, ModelHTTPError
+from pydantic_ai import ModelHTTPError, UnexpectedModelBehavior, UsageLimitExceeded
 from pydantic_ai.messages import ToolCallPart, ToolReturnPart
 
 from src.reagentai.agents.main.main_agent import MainAgent
@@ -37,18 +37,18 @@ def create_settings_panel(
             visible=True,
         )
 
+        gr.Examples(
+            examples=EXAMPLE_PROMPTS,
+            inputs=chat_input_component,
+            label="Example Prompts",
+        )
+
         gr.Markdown("### Tool Usage History")
         tool_display = gr.Chatbot(
             type="messages",
             label="Tool Usage",
             layout="panel",
             elem_id="tool_display",
-        )
-
-        gr.Examples(
-            examples=EXAMPLE_PROMPTS,
-            inputs=chat_input_component,
-            label="Example Prompts",
         )
 
     return model_dropdown, usage_counter, tool_display
