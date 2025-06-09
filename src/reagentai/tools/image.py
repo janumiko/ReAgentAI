@@ -13,14 +13,14 @@ logger = logging.getLogger(__name__)
 
 
 def smiles_to_image(
-    smiles: str, image_description: str, size: tuple[int, int] = (600, 300)
+    smiles: str, title: str, size: tuple[int, int] = (600, 300)
 ) -> ImageOutput:
     """
     Generate an image from a SMILES string.
 
     Args:
         smiles (str): The SMILES string to convert to an image.
-        image_description (str): A description or title for the generated image.
+        title (str): A title for the generated image.
         size (tuple[int, int]): The size of the image in pixels. Default is (600, 300).
 
     Returns:
@@ -41,16 +41,16 @@ def smiles_to_image(
         temp_file_path = tmp_file.name
 
     logger.info(f"Generated image for SMILES: {smiles}, saved to {temp_file_path}")
-    return ImageOutput(file_path=temp_file_path, description=image_description)
+    return ImageOutput(file_path=temp_file_path, title=title)
 
 
-def route_to_image(route: Route, image_description: str) -> ImageOutput:
+def route_to_image(route: Route, title: str) -> ImageOutput:
     """
     Generate an image from a retrosynthesis route.
 
     Args:
         route (Route): The retrosynthesis route to convert to an image.
-        image_description (str): A description or title for the generated image.
+        title (str): A title for the generated image.
 
     Returns:
         ImageOutput: An object containing the file path to the generated image and its description.
@@ -64,4 +64,4 @@ def route_to_image(route: Route, image_description: str) -> ImageOutput:
         temp_file_path = tmp_file.name
 
     logger.info(f"Generated image for route, saved to {temp_file_path}")
-    return ImageOutput(file_path=temp_file_path, description=image_description)
+    return ImageOutput(file_path=temp_file_path, title=title)

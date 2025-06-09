@@ -180,7 +180,7 @@ def run_agent(
                     if call.tool_name in ["smiles_to_image", "route_to_image"]:
                         output: ImageOutput = call.content
                         metadata = {
-                            "title": output.description,
+                            "title": output.title,
                             "status": "done",
                         }
                         gr_message = {

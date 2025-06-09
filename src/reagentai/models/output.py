@@ -7,8 +7,8 @@ class ImageOutput(BaseModel):
 
     Attributes:
         file_path (str): The file path to the image output.
-        description (str): A description or title for the image output.
+        title (str): A title for the image output.
     """
 
     file_path: str
-    description: str
+    title: str
