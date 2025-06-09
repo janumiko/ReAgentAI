@@ -10,6 +10,7 @@ dependencies = [
     "python-dotenv>=1.1.0",
     "gradio>=5.29.1",
     "pydantic-ai-slim[duckduckgo]>=0.2.4",
+    "pubchempy>=1.0.4",
 ]
 
 [tool.black]

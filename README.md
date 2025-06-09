@@ -1,4 +1,3 @@
-
 <img src="static/logo_reagent.png" width="200">
 
 # ReAgentAI
@@ -15,11 +14,14 @@ ReAgentAI is an advanced chemical assistant powered by AI that provides comprehe
 - **Molecular Visualization**: Create high-quality images of chemical structures and reaction pathways
 - **Similarity Search**: Find structurally similar molecules using molecular fingerprints and Tanimoto similarity
 - **SMILES Validation**: Verify and validate SMILES strings for chemical accuracy
+- **Chemical Information Retrieval**: Access comprehensive chemical data through PubChem integration
+- **Chemical Name/SMILES Conversion**: Convert between chemical names and SMILES using authoritative PubChem database
 - **Chemical Knowledge**: Access comprehensive chemistry information through integrated web search
 
-### Datasets & Models
+### Integrated Databases & Models
 - **USPTO-trained models**: Leveraging one of the largest chemical reaction databases
 - **ZINC stock collection**: Access to commercially available compounds
+- **PubChem database**: Integration with the NIH's comprehensive chemical database
 - **Curated molecular datasets**: ~16,000 drug-like molecules for similarity searches
 
 ## 🛠 Setup
@@ -85,6 +87,9 @@ ReAgentAI supports various chemistry-related queries:
 - **Molecular similarity**: "Find molecules similar to ethanol" or "What compounds are structurally related to benzene?"
 - **Structure visualization**: "Show me the structure of morphine" or "Generate an image of the synthesis route"
 - **Chemical validation**: "Is this SMILES string valid: CCO?"
+- **Chemical information**: "What is the IUPAC name and molecular formula of Paracetamol?"
+- **Name to SMILES**: "What is the SMILES string for Gabapentin?"
+- **SMILES to name**: "What chemical name corresponds to this SMILES: CN1C=NC2=C1C(=O)N(C(=O)N2C)C?"
 - **General chemistry**: "What are the properties of acetaminophen?"
 
 ## 🔧 Architecture
@@ -93,6 +98,7 @@ ReAgentAI is built with:
 - **Pydantic AI**: For robust AI agent framework
 - **RDKit**: Chemical informatics and molecular manipulation
 - **AiZynthFinder**: Retrosynthetic analysis engine
+- **PubChemPy**: Interface for accessing the PubChem database
 - **Google Gemini**: Large language model for natural language processing
 - **Gradio**: User-friendly web interface
 
