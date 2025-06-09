@@ -12,9 +12,7 @@ from src.reagentai.models.retrosynthesis import Route
 logger = logging.getLogger(__name__)
 
 
-def smiles_to_image(
-    smiles: str, title: str, size: tuple[int, int] = (600, 300)
-) -> ImageOutput:
+def smiles_to_image(smiles: str, title: str, size: tuple[int, int] = (600, 300)) -> ImageOutput:
     """
     Generate an image from a SMILES string.
 
