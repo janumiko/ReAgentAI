@@ -21,9 +21,10 @@ RUN mv data/docker_config.yml data/config.yml
 # Copy the uv binary into the container
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 
-# Create cache directory for uv and set permissions
+# Create cache and local directories for uv and set permissions
 RUN mkdir -p /home/appuser/.cache/uv && \
-    chown -R appuser:appuser /home/appuser/.cache
+    mkdir -p /home/appuser/.local/share/uv && \
+    chown -R appuser:appuser /home/appuser
 
 # Set ownership of the working directory to the non-root user
 RUN chown -R appuser:appuser /app
