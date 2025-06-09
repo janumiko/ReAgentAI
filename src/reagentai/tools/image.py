@@ -22,7 +22,7 @@ def smiles_to_image(smiles: str, title: str, size: tuple[int, int] = (600, 300))
         size (tuple[int, int]): The size of the image in pixels. Default is (600, 300).
 
     Returns:
-        ImageOutput: An object containing the file path to the generated image and its description.
+        ImageOutput: An object containing the file path and title of the generated image.
     Raises:
         ValueError: If the provided SMILES string is invalid.
     """
@@ -51,7 +51,7 @@ def route_to_image(route: Route, title: str) -> ImageOutput:
         title (str): A title for the generated image.
 
     Returns:
-        ImageOutput: An object containing the file path to the generated image and its description.
+        ImageOutput: An object containing the file path and title of the generated image.
     """
     image = RouteImageFactory(route).image
 
