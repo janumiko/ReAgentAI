@@ -73,7 +73,7 @@ For containerized deployment:
 
 3. **Run the container**:
    ```sh
-   sudo docker run -p 7860:7860 --env-file .env reagentai
+   sudo docker compose up
    ```
 
 4. **Access the application**:

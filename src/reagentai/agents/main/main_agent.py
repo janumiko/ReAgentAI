@@ -36,7 +36,6 @@ class MainAgentDependencyTypes:
 
 
 class MainAgent:
-
     def __init__(
         self,
         model_name: str,
