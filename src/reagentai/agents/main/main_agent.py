@@ -36,11 +36,12 @@ class MainAgentDependencyTypes:
 
 
 class MainAgent:
+
     def __init__(
         self,
         model_name: str,
         instructions: str,
-        tools: list[Tool],
+        tools: list[Tool[MainAgentDependencyTypes]],
         dependency_types: type[MainAgentDependencyTypes],
         dependencies: MainAgentDependencyTypes,
         output_type: type[str],
@@ -80,12 +81,13 @@ class MainAgent:
             Agent[MainAgentDependencyTypes, str]: An instance of the Agent configured with the main agent's model and instructions.
         """
 
-        return Agent(
+        return Agent[MainAgentDependencyTypes, str](
             self.model_name,
             tools=self.tools,
             instructions=self.instructions,
             deps_type=self.dependency_types,
             output_type=self.output_type,
+            retries=3,
         )
 
     def remove_last_messages(self, remove_user_prompt: bool = True):
@@ -122,7 +124,7 @@ class MainAgent:
         Returns:
             int: The total number of tokens used by the agent.
         """
-        if self.usage:
+        if self.usage and self.usage.total_tokens:
             return self.usage.total_tokens
         else:
             return 0
@@ -137,7 +139,9 @@ class MainAgent:
         self.usage = None
 
     @asynccontextmanager
-    async def run_stream(self, user_query: str) -> AsyncIterator[result.StreamedRunResult]:
+    async def run_stream(
+        self, user_query: str
+    ) -> AsyncIterator[result.StreamedRunResult[MainAgentDependencyTypes, str]]:
         """
         Streams the response from the agent asynchronously.
 
@@ -199,14 +203,14 @@ def create_main_agent() -> MainAgent:
         instructions = instructions_file.read()
 
     tools = [
-        Tool(perform_retrosynthesis, takes_ctx=True),
-        Tool(is_valid_smiles),
-        Tool(smiles_to_image),
-        Tool(route_to_image),
-        Tool(find_similar_molecules),
-        Tool(get_smiles_from_name),
-        Tool(get_compound_info),
-        Tool(get_name_from_smiles),
+        Tool[MainAgentDependencyTypes](perform_retrosynthesis, takes_ctx=True),
+        Tool[MainAgentDependencyTypes](is_valid_smiles),
+        Tool[MainAgentDependencyTypes](smiles_to_image),
+        Tool[MainAgentDependencyTypes](route_to_image),
+        Tool[MainAgentDependencyTypes](find_similar_molecules),
+        Tool[MainAgentDependencyTypes](get_smiles_from_name),
+        Tool[MainAgentDependencyTypes](get_compound_info),
+        Tool[MainAgentDependencyTypes](get_name_from_smiles),
         duckduckgo_search_tool(),
     ]
 
