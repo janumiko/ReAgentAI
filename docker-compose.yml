@@ -1,0 +1,43 @@
+services:
+  app:
+    container_name: reagent_app
+    build:
+      context: .
+      dockerfile: Dockerfile.reagent
+    ports:
+      - "7860:7860"
+    env_file:
+      - .env
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    networks:
+      - app-network
+    restart: no
+    depends_on:
+      redis:
+        condition: service_started
+
+  redis:
+    container_name: reagent_redis
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
+    restart: no
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru --requirepass ${REDIS_PASSWORD}
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  redis_data:
+    driver: local
+
+networks:
+  app-network:
+    driver: bridge
